@@ -53,6 +53,7 @@ def create_sbm(cluster_sizes, p, q):
     return nx.to_numpy_matrix(G)
 
 def get_eigenvectors(A):
+    MARGIN = .25
     U, s, V = np.linalg.svd(A)
 
     rep_eigenvectors = U[:2]
