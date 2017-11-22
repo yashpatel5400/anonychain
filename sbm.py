@@ -56,7 +56,7 @@ def create_sbm(cluster_sizes, p, q):
 
     spring_pos = nx.spring_layout(G)
     nx.draw(G, spring_pos, node_size=100, 
-        alpha=0.3, node_color=graph_colors)
+        alpha=0.75, node_color=graph_colors)
     plt.savefig("output/graph.png")
     plt.close()
 
