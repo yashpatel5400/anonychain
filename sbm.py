@@ -6,6 +6,7 @@ __description__ = Investigating eigenvalues of SBM model (toy examples)
 import random
 import networkx as nx
 import numpy as np
+import matplotlib.pyplot as plt
 
 def _create_clusters(cluster_sizes):
     completed_nodes = 0
@@ -48,23 +49,17 @@ def create_sbm(cluster_sizes, p, q):
                     else: verify_diff += 1
                     G.add_edge(cur_node, other_node)
 
+    possible_colors = ["blue", "green", "red", "cyan", "black", "pink"]
+    colors = np.random.choice(possible_colors, size=len(cluster_sizes), replace=False)
+    graph_colors = [colors[i] for i in range(len(cluster_sizes)) 
+        for _ in range(cluster_sizes[i])]
+
+    spring_pos = nx.spring_layout(G)
+    nx.draw(G, spring_pos, node_size=100, 
+        alpha=0.3, node_color=graph_colors)
+    plt.savefig("output/graph.png")
+    plt.close()
+
     print("Prop same: {}; Prop diff: {}".format(
         verify_same/same_cluster_nodes, verify_diff/diff_cluster_nodes))
     return nx.to_numpy_matrix(G)
-
-def get_eigenvectors(A):
-    MARGIN = .25
-    U, s, V = np.linalg.svd(A)
-
-    rep_eigenvectors = U[:2]
-    min_distances = []
-    for eigenvector in U:
-        distances = [np.linalg.norm(eigenvector - rep_eigenvector) for 
-            rep_eigenvector in rep_eigenvectors]
-        min_distances.append(min(distances))
-
-    distinct_jumps = []
-    for i in range(1, len(s)):
-        if (s[i-1] - s[i])/s[i-1] > MARGIN:
-            distinct_jumps.append(s[i-1])
-    # print(distinct_jumps)

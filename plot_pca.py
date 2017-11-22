@@ -26,7 +26,8 @@ def _plot_clusters_2d(colors, A, plot_lib):
 
     if plot_lib == "matplotlib":
         plt.scatter(pca_x, pca_y, c=colors)
-        plt.savefig("pca_2d.png")
+        plt.savefig("output/pca_2d.png")
+        plt.close()
     elif plot_lib == "plotly":
         plotly.offline.plot({
             "data": [Scatter(
@@ -36,7 +37,7 @@ def _plot_clusters_2d(colors, A, plot_lib):
                 marker = dict(color=colors)
             )],
             "layout": Layout(title="PCA 2D Projection")
-        },  filename="pca_2d.html")
+        },  filename="output/pca_2d.html")
 
 def _plot_clusters_3d(colors, A, plot_lib):
     pca = PCA(n_components=3)
@@ -52,7 +53,8 @@ def _plot_clusters_3d(colors, A, plot_lib):
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
         ax.scatter(pca_x, pca_y, pca_z, c=colors)
-        plt.savefig("pca_3d.png")
+        plt.savefig("output/pca_3d.png")
+        plt.close()
     elif plot_lib == "plotly":
         plotly.offline.plot({
             "data": [Scatter3d(
@@ -63,10 +65,10 @@ def _plot_clusters_3d(colors, A, plot_lib):
                 marker = dict(color=colors)
             )],
             "layout": Layout(title="PCA 3D Projection")
-        },  filename="pca_3d.html")
+        },  filename="output/pca_3d.html")
 
 def plot_pca(A, cluster_sizes, plot_2d=True, plot_3d=True, plot_lib="plotly"):
-    possible_colors = ["blue", "green", "red", "cyan", "yellow", "black", "white"]
+    possible_colors = ["blue", "green", "red", "cyan", "black", "pink"]
     colors = np.random.choice(possible_colors, size=len(cluster_sizes), replace=False)
     scatter_colors = [colors[i] for i in range(len(cluster_sizes)) 
         for _ in range(cluster_sizes[i])]
