@@ -9,11 +9,12 @@ import networkx as nx
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import colors as mcolors
 from mpl_toolkits.mplot3d import Axes3D
 
 import plotly
 from plotly.graph_objs import Scatter, Scatter3d, Layout
+
+from constants import colors
 
 def _plot_clusters_2d(colors, A, plot_lib):
     pca = PCA(n_components=2)
@@ -69,8 +70,6 @@ def _plot_clusters_3d(colors, A, plot_lib):
 
 def plot_pca(G, clusters, plot_2d=True, plot_3d=True, plot_lib="plotly"):
     A = nx.to_numpy_matrix(G)
-
-    colors = list(mcolors.CSS4_COLORS.values())
     scatter_colors = [colors[i] for i in range(len(clusters)) for _ in clusters[i]]
 
     if plot_2d:
