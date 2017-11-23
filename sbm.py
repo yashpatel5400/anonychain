@@ -3,29 +3,21 @@ __author__ = Yash Patel
 __name__   = sbm.py
 __description__ = Investigating eigenvalues of SBM model (toy examples)
 """
+
 import random
 import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
 
-def _create_clusters(cluster_sizes):
-    completed_nodes = 0
-    clusters = []
-    for cluster_size in cluster_sizes:
-        clusters.append(set(range(completed_nodes, completed_nodes + cluster_size)))
-        completed_nodes += cluster_size
-    return clusters
-
-def create_sbm(cluster_sizes, p, q):
+def create_sbm(clusters, p, q):
     """
     creates a stochastic block model, with probability p within the same
     cluster and probability q outside, with n vertices
     """
     G = nx.Graph()
-    total_nodes = sum(cluster_sizes)
+    total_nodes = sum([len(cluster) for cluster in clusters])
     G.add_nodes_from(list(range(total_nodes)))
 
-    clusters = _create_clusters(cluster_sizes)
     verify_same = 0
     verify_diff = 0
 

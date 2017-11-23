@@ -9,36 +9,34 @@ import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 
-def _eigenvectors(laplacian, fn):
-    U, s, V = np.linalg.svd(laplacian)
+def _partition_graph(partition_eigenvector):
+    partition1, partition2 = set(), set()
+    for i in range(len(partition_eigenvector)):
+        if partition_eigenvector[i] > 0:
+            partition1.add(i)
+        else: partition2.add(i)
+    return [partition1, partition2]
+
+def _spectral_partition(mat, eigen_index, mat_type):
+    U, s, V = np.linalg.svd(mat)
 
     MARGIN_PROP = 0.75
     margin = MARGIN_PROP * np.std(s)
     e = [margin] * len(s)
 
     plt.errorbar(list(range(len(s))), s, yerr=e, fmt='o')
-    plt.savefig("output/{}".format(fn))
+    plt.savefig("output/{}.png".format(mat_type))
     plt.close()
 
-    return U
+    partition_eigenvector = np.squeeze(np.asarray(U[eigen_index]))
+    plt.scatter(list(range(len(partition_eigenvector))), 
+        sorted(partition_eigenvector))
+    plt.savefig("output/{}_eigenvector.png".format(mat_type))
+    plt.close()
 
-def _partition_graph(second_smallest_eigenvector):
-    partition1, partition2 = set(), set()
-    for i in range(len(second_smallest_eigenvector)):
-        if second_smallest_eigenvector[i] > 0:
-            partition1.add(i)
-        else: partition2.add(i)
-    return [partition1, partition2]
+    return _partition_graph(partition_eigenvector)
 
 def spectral_analysis(G, partitions):
-    laplacian = nx.laplacian_matrix(G).todense()
-    U = _eigenvectors(laplacian, "laplacian.png")
-    
-    second_smallest_eigenvector = np.squeeze(np.asarray(U[-2]))
-    plt.scatter(list(range(len(second_smallest_eigenvector))), 
-        sorted(second_smallest_eigenvector))
-    plt.savefig("output/second_smallest.png")
-    plt.close()
-
-    partitions = _partition_graph(second_smallest_eigenvector)
-    return partitions
+    adj_partitions = _spectral_partition(nx.adjacency_matrix(G).todense(), 1,  "adjacency")
+    lap_partitions = _spectral_partition(nx.laplacian_matrix(G).todense(), -2, "laplacian")
+    return adj_partitions, lap_partitions

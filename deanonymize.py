@@ -17,10 +17,22 @@ from plot_pca import plot_pca
 from sbm import create_sbm
 from spectral import spectral_analysis
 
-def draw_graph(G, pos, colors, fn):
-    nx.draw(G, pos, node_size=100, alpha=0.75, node_color=colors)
+def _draw_partitions(G, pos, partitions, fn):
+    colors = ["blue", "green", "red", "cyan", "black", "pink"]
+    guessed_colors = [colors[j] for i in range(len(G.nodes))
+        for j, partition in enumerate(partitions) if i in partition]
+
+    nx.draw(G, pos, node_size=100, alpha=0.75, node_color=guessed_colors)
     plt.savefig("output/{}".format(fn))
     plt.close()
+
+def _create_clusters(cluster_sizes):
+    completed_nodes = 0
+    clusters = []
+    for cluster_size in cluster_sizes:
+        clusters.append(set(range(completed_nodes, completed_nodes + cluster_size)))
+        completed_nodes += cluster_size
+    return clusters
 
 def main(argv):
     pca          = "y"
@@ -62,23 +74,17 @@ def main(argv):
     else:
         cluster_sizes = [cluster_size] * num_clusters
 
-    possible_colors = ["blue", "green", "red", "cyan", "black", "pink"]
-    colors = np.random.choice(possible_colors, size=len(cluster_sizes), replace=False)
-
-    sbm = create_sbm(cluster_sizes, p, q)
-    adj = nx.to_numpy_matrix(sbm)
-
+    clusters = _create_clusters(cluster_sizes)
+    sbm = create_sbm(clusters, p, q)
     if pca == "y":
-        plot_pca(adj, cluster_sizes, plot_2d=True, plot_3d=True, plot_lib=lib)
-    partitions = spectral_analysis(sbm, partitions=2)
+        plot_pca(sbm, clusters, plot_2d=True, plot_3d=True, plot_lib=lib)
 
+    adj_partitions, lap_partitions = spectral_analysis(sbm, partitions=2)
+    
     spring_pos = nx.spring_layout(sbm)
-    original_colors = [colors[i] for i in range(len(cluster_sizes)) 
-        for _ in range(cluster_sizes[i])]
-    guessed_colors = [possible_colors[j] for i in range(sum(cluster_sizes))
-        for j, partition in enumerate(partitions) if i in partition]
-    draw_graph(sbm, spring_pos, original_colors, "truth.png")
-    draw_graph(sbm, spring_pos, guessed_colors,  "guess.png")
+    _draw_partitions(sbm, spring_pos, clusters, "truth.png")
+    _draw_partitions(sbm, spring_pos, adj_partitions, "adjacency_guess.png")
+    _draw_partitions(sbm, spring_pos, lap_partitions, "laplacian_guess.png")
 
 if __name__ == "__main__":
     main(sys.argv[1:])
