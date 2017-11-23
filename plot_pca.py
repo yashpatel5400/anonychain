@@ -7,8 +7,6 @@ __description__ = Functions to plot PCA results (for 2, 3 dimensions)
 from sklearn.decomposition import PCA
 
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
