@@ -5,6 +5,7 @@ __description__ = Functions to plot PCA results (for 2, 3 dimensions)
 """
 
 from sklearn.decomposition import PCA
+import networkx as nx
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -65,11 +66,10 @@ def _plot_clusters_3d(colors, A, plot_lib):
             "layout": Layout(title="PCA 3D Projection")
         },  filename="output/pca_3d.html")
 
-def plot_pca(A, cluster_sizes, plot_2d=True, plot_3d=True, plot_lib="plotly"):
-    possible_colors = ["blue", "green", "red", "cyan", "black", "pink"]
-    colors = np.random.choice(possible_colors, size=len(cluster_sizes), replace=False)
-    scatter_colors = [colors[i] for i in range(len(cluster_sizes)) 
-        for _ in range(cluster_sizes[i])]
+def plot_pca(G, clusters, plot_2d=True, plot_3d=True, plot_lib="plotly"):
+    A = nx.to_numpy_matrix(G)
+    colors = ["blue", "green", "red", "cyan", "black", "pink"]
+    scatter_colors = [colors[i] for i in range(len(clusters)) for _ in clusters[i]]
 
     if plot_2d:
         _plot_clusters_2d(scatter_colors, A, plot_lib=plot_lib)
