@@ -49,17 +49,6 @@ def create_sbm(cluster_sizes, p, q):
                     else: verify_diff += 1
                     G.add_edge(cur_node, other_node)
 
-    possible_colors = ["blue", "green", "red", "cyan", "black", "pink"]
-    colors = np.random.choice(possible_colors, size=len(cluster_sizes), replace=False)
-    graph_colors = [colors[i] for i in range(len(cluster_sizes)) 
-        for _ in range(cluster_sizes[i])]
-
-    spring_pos = nx.spring_layout(G)
-    nx.draw(G, spring_pos, node_size=100, 
-        alpha=0.75, node_color=graph_colors)
-    plt.savefig("output/graph.png")
-    plt.close()
-
     print("Prop same: {}; Prop diff: {}".format(
         verify_same/same_cluster_nodes, verify_diff/diff_cluster_nodes))
-    return nx.to_numpy_matrix(G)
+    return G
