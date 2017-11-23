@@ -11,20 +11,13 @@ import matplotlib
 matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
+from matplotlib import colors as mcolors
+
 import numpy as np
 
 from plot_pca import plot_pca
 from sbm import create_sbm
 from spectral import spectral_analysis
-
-def _draw_partitions(G, pos, partitions, fn):
-    colors = ["blue", "green", "red", "cyan", "black", "pink"]
-    guessed_colors = [colors[j] for i in range(len(G.nodes))
-        for j, partition in enumerate(partitions) if i in partition]
-
-    nx.draw(G, pos, node_size=100, alpha=0.75, node_color=guessed_colors)
-    plt.savefig("output/{}".format(fn))
-    plt.close()
 
 def _create_clusters(cluster_sizes):
     completed_nodes = 0
@@ -33,6 +26,19 @@ def _create_clusters(cluster_sizes):
         clusters.append(set(range(completed_nodes, completed_nodes + cluster_size)))
         completed_nodes += cluster_size
     return clusters
+
+def _draw_partitions(G, pos, clusters, partitions, fn, calc_accuracy=True):
+    if calc_accuracy and len(clusters) == len(partitions):
+        partitions = _reorder_clusters(clusters, partitions)
+        print("{} accuracy: {}%".format(fn, _calc_accuracy(clusters, partitions)))
+
+    colors = list(mcolors.CSS4_COLORS.values())
+    guessed_colors = [colors[j] for i in range(len(G.nodes))
+        for j, partition in enumerate(partitions) if i in partition]
+
+    nx.draw(G, pos, node_size=100, node_color=guessed_colors)
+    plt.savefig("output/{}".format(fn))
+    plt.close()
 
 def _reorder_clusters(clusters, partitions):
     reordered_partitions = [None for _ in clusters]
@@ -98,17 +104,12 @@ def main(argv):
     if pca == "y":
         plot_pca(sbm, clusters, plot_2d=True, plot_3d=True, plot_lib=lib)
 
-    adj_partitions, lap_partitions = spectral_analysis(sbm, partitions=2)
-    adj_reordered = _reorder_clusters(clusters, adj_partitions)
-    lap_reordered = _reorder_clusters(clusters, lap_partitions)
-
-    print("Adjacency accuracy: {}%".format(_calc_accuracy(clusters, adj_reordered)))
-    print("Laplacian accuracy: {}%".format(_calc_accuracy(clusters, lap_reordered)))
-
     spring_pos = nx.spring_layout(sbm)
-    _draw_partitions(sbm, spring_pos, clusters, "truth.png")
-    _draw_partitions(sbm, spring_pos, adj_reordered, "adjacency_guess.png")
-    _draw_partitions(sbm, spring_pos, lap_reordered, "laplacian_guess.png")
+    
+    adj_partitions, lap_partitions = spectral_analysis(sbm, partitions=2)
+    _draw_partitions(sbm, spring_pos, clusters, clusters,       "truth.png", calc_accuracy=False)
+    _draw_partitions(sbm, spring_pos, clusters, adj_partitions, "adjacency_guess.png", calc_accuracy=True)
+    _draw_partitions(sbm, spring_pos, clusters, lap_partitions, "laplacian_guess.png", calc_accuracy=True)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
