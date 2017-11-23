@@ -11,13 +11,12 @@ import matplotlib
 matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
-from matplotlib import colors as mcolors
-
 import numpy as np
 
 from plot_pca import plot_pca
 from sbm import create_sbm
 from spectral import spectral_analysis
+from constants import colors
 
 def _create_clusters(cluster_sizes):
     completed_nodes = 0
@@ -32,7 +31,6 @@ def _draw_partitions(G, pos, clusters, partitions, fn, calc_accuracy=True):
         partitions = _reorder_clusters(clusters, partitions)
         print("{} accuracy: {}%".format(fn, _calc_accuracy(clusters, partitions)))
 
-    colors = list(mcolors.CSS4_COLORS.values())
     guessed_colors = [colors[j] for i in range(len(G.nodes))
         for j, partition in enumerate(partitions) if i in partition]
 
