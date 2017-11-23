@@ -34,6 +34,25 @@ def _create_clusters(cluster_sizes):
         completed_nodes += cluster_size
     return clusters
 
+def _reorder_clusters(clusters, partitions):
+    reordered_partitions = [None for _ in clusters]
+    used_partitions = set()
+    for i, cluster in enumerate(clusters):
+        intersects = np.array([len(cluster.intersection(partition)) 
+             if j not in used_partitions else -1 for j, partition in enumerate(partitions)])
+        most_similar = np.argmax(intersects)
+        used_partitions.add(most_similar)
+        reordered_partitions[i] = partitions[most_similar]
+    return reordered_partitions
+
+def _calc_accuracy(truth, guess):
+    num_correct = 0
+    total_nodes = 0
+    for i in range(len(truth)):
+        num_correct += len(truth[i].intersection(guess[i]))
+        total_nodes += len(truth[i])
+    return num_correct/total_nodes
+
 def main(argv):
     pca          = "y"
     p            = 0.75
@@ -80,11 +99,16 @@ def main(argv):
         plot_pca(sbm, clusters, plot_2d=True, plot_3d=True, plot_lib=lib)
 
     adj_partitions, lap_partitions = spectral_analysis(sbm, partitions=2)
-    
+    adj_reordered = _reorder_clusters(clusters, adj_partitions)
+    lap_reordered = _reorder_clusters(clusters, lap_partitions)
+
+    print("Adjacency accuracy: {}%".format(_calc_accuracy(clusters, adj_reordered)))
+    print("Laplacian accuracy: {}%".format(_calc_accuracy(clusters, lap_reordered)))
+
     spring_pos = nx.spring_layout(sbm)
     _draw_partitions(sbm, spring_pos, clusters, "truth.png")
-    _draw_partitions(sbm, spring_pos, adj_partitions, "adjacency_guess.png")
-    _draw_partitions(sbm, spring_pos, lap_partitions, "laplacian_guess.png")
+    _draw_partitions(sbm, spring_pos, adj_reordered, "adjacency_guess.png")
+    _draw_partitions(sbm, spring_pos, lap_reordered, "laplacian_guess.png")
 
 if __name__ == "__main__":
     main(sys.argv[1:])
