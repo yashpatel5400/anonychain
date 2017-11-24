@@ -15,7 +15,7 @@ import numpy as np
 
 from plot_pca import plot_pca
 from sbm import create_sbm
-from spectral import spectral_analysis
+from spectral import spectral_analysis, kmeans_analysis
 from constants import colors
 
 def _create_clusters(cluster_sizes):
@@ -57,7 +57,7 @@ def _calc_accuracy(truth, guess):
         total_nodes += len(truth[i])
     return num_correct/total_nodes
 
-def main(argv):
+def _cmd_graph(argv):
     pca          = "y"
     p            = 0.75
     q            = 0.25
@@ -98,13 +98,19 @@ def main(argv):
         cluster_sizes = [cluster_size] * num_clusters
 
     clusters = _create_clusters(cluster_sizes)
+    return clusters, pca, p, q, lib
+
+def main(argv):
+    clusters, pca, p, q, lib = _cmd_graph(argv)
     sbm = create_sbm(clusters, p, q)
+
     if pca == "y":
         plot_pca(sbm, clusters, plot_2d=True, plot_3d=True, plot_lib=lib)
-
-    spring_pos = nx.spring_layout(sbm)
     
     adj_partitions, lap_partitions = spectral_analysis(sbm, partitions=2)
+    kmeans_analysis(sbm, clusters, (len(adj_partitions) + len(lap_partitions)) // 2)
+
+    spring_pos = nx.spring_layout(sbm)
     _draw_partitions(sbm, spring_pos, clusters, clusters,       "truth.png", calc_accuracy=False)
     _draw_partitions(sbm, spring_pos, clusters, adj_partitions, "adjacency_guess.png", calc_accuracy=True)
     _draw_partitions(sbm, spring_pos, clusters, lap_partitions, "laplacian_guess.png", calc_accuracy=True)
