@@ -8,6 +8,7 @@ matrix (for estimating number of distinct accounts)
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
+from sklearn.cluster import KMeans
 
 def _partition_graph(G, partition_eigenvector):
     partition1, partition2 = set(), set()
@@ -36,12 +37,13 @@ def _spectral_partition(G, mat_type):
     if mat_type == "adjacency":
         get_mat = lambda G : nx.adjacency_matrix(G).todense()
         eigen_index = 1
+        LOWER_BOUND = 2.0
     else:
         get_mat = lambda G : nx.laplacian_matrix(G).todense()
         eigen_index = -2
+        LOWER_BOUND = 2.0
     
     partitions = [G]
-    TERMINATING_EIGENVALUE = 2.5
     while True:
         largest_partition = np.argmax(np.array([len(graph.nodes) for graph in partitions]))
         to_partition = partitions[largest_partition]
@@ -51,7 +53,7 @@ def _spectral_partition(G, mat_type):
         partition_eigenvalue  = s[eigen_index]
         partition_eigenvector = np.squeeze(np.asarray(U[eigen_index]))
 
-        if partition_eigenvalue < TERMINATING_EIGENVALUE:
+        if partition_eigenvalue < LOWER_BOUND:
             break
         
         _plot_eigenvalues(s, "{}/eigenvalues_{}.png".format(mat_type, len(partitions)))
@@ -68,3 +70,12 @@ def spectral_analysis(G, partitions):
     adj_partitions = _spectral_partition(G,"adjacency")
     lap_partitions = _spectral_partition(G, "laplacian")
     return adj_partitions, lap_partitions
+
+def kmeans_analysis(G, clusters, k):
+    M = nx.adjacency_matrix(G).todense()
+    kmeans = KMeans(n_clusters=k, random_state=0).fit(M)
+
+    true_labels = np.array([j for i in range(len(kmeans.labels_))
+            for j, cluster in enumerate(clusters) if i in cluster])
+    accuracy = sum(true_labels == kmeans.labels_) / len(true_labels)
+    print("K-means accuracy: {}".format(accuracy))
