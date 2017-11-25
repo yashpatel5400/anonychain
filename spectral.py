@@ -41,14 +41,13 @@ def _plot_eigenvector(eigenvector, fn):
     plt.savefig("output/{}".format(fn))
     plt.close()
 
-def spectral_analysis(G, normalize=True):
+def spectral_analysis(G, k=None, normalize=True):
     EIGEN_GAP = 1.0
     
     if normalize:
         get_mat = lambda G : nx.normalized_laplacian_matrix(G).todense()
     else: get_mat = lambda G : nx.laplacian_matrix(G).todense()
     
-    k = 4
     partitions = [G]
     while True:
         second_least_eigenvalues = []

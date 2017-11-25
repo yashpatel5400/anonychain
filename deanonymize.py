@@ -58,25 +58,29 @@ def _calc_accuracy(truth, guess):
     return 100.0 * (num_correct/total_nodes)
 
 def _cmd_graph(argv):
-    pca          = "y"
-    p            = 0.75
-    q            = 0.25
-    cluster_size = 10
-    num_clusters = 2
-    cs           = None
-    lib          = "matplotlib"
+    pca             = "y"
+    p               = 0.75
+    q               = 0.25
+
+    assume_clusters = False
+    cluster_size    = 10
+    num_clusters    = 2
+    
+    cs              = None
+    lib             = "matplotlib"
 
     USAGE_STRING = """eigenvalues.py 
             -d <display_bool>    [(y/n) for whether to show PCA projections]
             -c <cluster_size>    [(int) size of each cluster (assumed to be same for all)]
             -n <num_cluster>     [(int) number of clusters (distinct people)]
+            -g <guess_bool>      [(y/n) to guess the number of clusters vs. take it as known] 
             -p <p_value>         [(0,1) for in-cluster probability]
             -q <q_value>         [(0,1) for non-cluster probability] 
             --cs <cluster_sizes> [(int lisst) size of each cluster (comma delimited)]
             --lib                [('matplotlib','plotly') for plotting library]"""
 
     try:
-        opts, args = getopt.getopt(argv,"d:c:n:p:q:",['lib=','cs='])
+        opts, args = getopt.getopt(argv,"d:c:n:g:p:q:",['lib=','cs='])
     except getopt.GetoptError:
         print("Using default values. To change use: \n{}".format(USAGE_STRING))
 
@@ -85,10 +89,13 @@ def _cmd_graph(argv):
             print(USAGE_STRING)
             sys.exit()
         elif opt in ("-d"): pca = arg
-        elif opt in ("-p"): p = float(arg)
-        elif opt in ("-q"): q = float(arg)
         elif opt in ("-c"): cluster_size = int(arg)
         elif opt in ("-n"): num_clusters = int(arg)
+        elif opt in ("-g"): assume_clusters = (arg == "y")
+        
+        elif opt in ("-p"): p = float(arg)
+        elif opt in ("-q"): q = float(arg)
+        
         elif opt in ("--cs"):  cs = arg
         elif opt in ("--lib"): lib = arg
 
@@ -98,16 +105,19 @@ def _cmd_graph(argv):
         cluster_sizes = [cluster_size] * num_clusters
 
     clusters = _create_clusters(cluster_sizes)
-    return clusters, pca, p, q, lib
+    return clusters, assume_clusters, pca, p, q, lib
 
 def main(argv):
-    clusters, pca, p, q, lib = _cmd_graph(argv)
+    clusters, assume_clusters, pca, p, q, lib = _cmd_graph(argv)
     sbm = create_sbm(clusters, p, q)
 
     if pca == "y":
         plot_pca(sbm, clusters, plot_2d=True, plot_3d=True, plot_lib=lib)
     
-    partitions = spectral_analysis(sbm, normalize=True)
+    if assume_clusters:
+        partitions = spectral_analysis(sbm, k=len(clusters), normalize=True)
+    else: partitions = spectral_analysis(sbm, k=None, normalize=True)
+
     kmeans_analysis(sbm, clusters, len(clusters))
 
     spring_pos = nx.spring_layout(sbm)
