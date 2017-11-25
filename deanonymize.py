@@ -62,10 +62,10 @@ def _cmd_graph(argv):
     p               = 0.75
     q               = 0.25
 
-    assume_clusters = False
+    guess_clusters  = True 
     cluster_size    = 10
     num_clusters    = 2
-    
+
     cs              = None
     lib             = "matplotlib"
 
@@ -91,7 +91,7 @@ def _cmd_graph(argv):
         elif opt in ("-d"): pca = arg
         elif opt in ("-c"): cluster_size = int(arg)
         elif opt in ("-n"): num_clusters = int(arg)
-        elif opt in ("-g"): assume_clusters = (arg == "y")
+        elif opt in ("-g"): guess_clusters = (arg == "y")
         
         elif opt in ("-p"): p = float(arg)
         elif opt in ("-q"): q = float(arg)
@@ -105,18 +105,18 @@ def _cmd_graph(argv):
         cluster_sizes = [cluster_size] * num_clusters
 
     clusters = _create_clusters(cluster_sizes)
-    return clusters, assume_clusters, pca, p, q, lib
+    return clusters, guess_clusters, pca, p, q, lib
 
 def main(argv):
-    clusters, assume_clusters, pca, p, q, lib = _cmd_graph(argv)
+    clusters, guess_clusters, pca, p, q, lib = _cmd_graph(argv)
     sbm = create_sbm(clusters, p, q)
 
     if pca == "y":
         plot_pca(sbm, clusters, plot_2d=True, plot_3d=True, plot_lib=lib)
     
-    if assume_clusters:
-        partitions = spectral_analysis(sbm, k=len(clusters), normalize=True)
-    else: partitions = spectral_analysis(sbm, k=None, normalize=True)
+    if guess_clusters:
+        partitions = spectral_analysis(sbm, k=None, normalize=True)
+    else: partitions = spectral_analysis(sbm, k=len(clusters), normalize=True)
 
     kmeans_analysis(sbm, clusters, len(clusters))
 

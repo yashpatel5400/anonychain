@@ -32,6 +32,7 @@ def _plot_eigenvalues(s, fn):
     e = [margin] * len(s)
 
     plt.errorbar(list(range(len(s))), s, yerr=e, fmt='o')
+    plt.axhline(0.1)
     plt.savefig("output/{}".format(fn))
     plt.close()
 
@@ -42,7 +43,7 @@ def _plot_eigenvector(eigenvector, fn):
     plt.close()
 
 def spectral_analysis(G, k=None, normalize=True):
-    EIGEN_GAP = 1.0
+    EIGEN_GAP = 0.1
     
     if normalize:
         get_mat = lambda G : nx.normalized_laplacian_matrix(G).todense()
@@ -77,9 +78,10 @@ def spectral_analysis(G, k=None, normalize=True):
             _plot_eigenvalues(eigen_steps, "eigen_step.png")
 
             for i, eigen_step in enumerate(eigen_steps):
-                k = i + 1
                 if eigen_step > EIGEN_GAP:
-                    break
+                    k = i + 1
+            if k is None:
+                k = 1
             print("Partitioning into {} clusters".format(k))
 
         if len(partitions) >= k:
