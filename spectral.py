@@ -35,7 +35,7 @@ def _plot_eigenvector(eigenvector, fn):
     plt.close()
 
 def _spectral_partition(G, mat_type):
-    EIGEN_GAP   = 1.75
+    EIGEN_GAP = 1.0
     
     if mat_type == "adjacency":
         get_mat = lambda G : nx.adjacency_matrix(G).todense()
@@ -44,7 +44,7 @@ def _spectral_partition(G, mat_type):
         get_mat = lambda G : nx.laplacian_matrix(G).todense()
         eigen_index = -2
 
-    k = 2
+    k = None
     partitions = [G]
     while True:
         largest_partition = np.argmax(np.array([len(graph.nodes) for graph in partitions]))
@@ -60,10 +60,9 @@ def _spectral_partition(G, mat_type):
         if k is None:
             rev_s = s[::-1]
             eigen_steps = [(rev_s[i] - rev_s[i-1]) for i in range(1, len(rev_s))] 
-            print(eigen_steps)
             for i, eigen_step in enumerate(eigen_steps):
-                k = i + 1
-                if eigen_step > EIGEN_GAP:
+                if eigen_step < EIGEN_GAP:
+                    k = i
                     break
             print("Partitioning into {} clusters".format(k))
 
@@ -81,9 +80,9 @@ def _spectral_partition(G, mat_type):
     return partitions
 
 def spectral_analysis(G, partitions):
-    adj_partitions = _spectral_partition(G, "adjacency")
+    # adj_partitions = _spectral_partition(G, "adjacency")
     lap_partitions = _spectral_partition(G, "laplacian")
-    return adj_partitions, lap_partitions
+    return lap_partitions #, adj_partitions
 
 def kmeans_analysis(G, clusters, k):
     L = nx.laplacian_matrix(G).todense()
