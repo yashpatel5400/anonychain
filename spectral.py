@@ -15,7 +15,7 @@ def _partition_graph(G, partition_eigenvector):
     partition1, partition2, partition3 = set(), set(), set()
     for i in range(len(partition_eigenvector)):
         cur_node = list(G.nodes())[i]
-        if partition_eigenvector[i] >= 0:
+        if partition_eigenvector[i] > 0:
             partition1.add(cur_node)
         elif partition_eigenvector[i] == 0:
             partition2.add(cur_node)
@@ -42,21 +42,29 @@ def _plot_eigenvector(eigenvector, fn):
     plt.savefig("output/{}".format(fn))
     plt.close()
 
-def _spectral_partition(G, mat_type):
+def _spectral_partition(G, mat_type, normalize=True):
     EIGEN_GAP = 1.0
     
     if mat_type == "adjacency":
         get_mat = lambda G : nx.adjacency_matrix(G).todense()
         eigen_index = 1
     else:
-        get_mat = lambda G : nx.laplacian_matrix(G).todense()
+        if normalize:
+            get_mat = lambda G : nx.normalized_laplacian_matrix(G).todense()
+        else: get_mat = lambda G : nx.laplacian_matrix(G).todense()
         eigen_index = -2
 
     k = 3
     partitions = [G]
     while True:
-        largest_partition = np.argmax(np.array([len(graph.nodes) for graph in partitions]))
-        to_partition = partitions[largest_partition]
+        second_least_eigenvalues = []
+        for partition in partitions:
+            _, s, _ = np.linalg.svd(get_mat(partition))
+            second_least_eigenvalues.append(s[-2])
+
+        # largest_partition = np.argmax(np.array([len(graph.nodes) for graph in partitions]))
+        best_partition = np.argmin(np.array(second_least_eigenvalues))
+        to_partition = partitions[best_partition]
         mat = get_mat(to_partition)
 
         U, s, _ = np.linalg.svd(mat)
@@ -65,8 +73,6 @@ def _spectral_partition(G, mat_type):
         partition_eigenvalue  = s[eigen_index]
         partition_eigenvector = np.squeeze(np.asarray(eigenvectors[eigen_index]))
 
-        print(partition_eigenvector)
-        
         _plot_eigenvalues(s, "{}/eigenvalues_{}.png".format(mat_type, len(partitions)))
         _plot_eigenvector(partition_eigenvector, 
             "{}/eigenvector_{}.png".format(mat_type, len(partitions)))
@@ -86,7 +92,7 @@ def _spectral_partition(G, mat_type):
             break
 
         new_partitions = _partition_graph(to_partition, partition_eigenvector)
-        del partitions[largest_partition] 
+        del partitions[best_partition] 
         partitions += new_partitions
 
         print([partition.nodes() for partition in partitions])
@@ -95,7 +101,7 @@ def _spectral_partition(G, mat_type):
 
 def spectral_analysis(G, partitions):
     # adj_partitions = _spectral_partition(G, "adjacency")
-    lap_partitions = _spectral_partition(G, "laplacian")
+    lap_partitions = _spectral_partition(G, "laplacian", normalize=True)
     return lap_partitions #, adj_partitions
 
 def kmeans_analysis(G, clusters, k):
