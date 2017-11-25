@@ -35,17 +35,16 @@ def _plot_eigenvector(eigenvector, fn):
     plt.close()
 
 def _spectral_partition(G, mat_type):
-    EIGEN_GAP   = .50
-    eigen_index = 1
-
+    EIGEN_GAP   = 1.75
+    
     if mat_type == "adjacency":
         get_mat = lambda G : nx.adjacency_matrix(G).todense()
-        LOWER_BOUND = 2.0
+        eigen_index = 1
     else:
         get_mat = lambda G : nx.laplacian_matrix(G).todense()
-        LOWER_BOUND = 2.0
-    
-    k = None
+        eigen_index = -2
+
+    k = 2
     partitions = [G]
     while True:
         largest_partition = np.argmax(np.array([len(graph.nodes) for graph in partitions]))
@@ -53,21 +52,21 @@ def _spectral_partition(G, mat_type):
         mat = get_mat(to_partition)
 
         U, s, _ = np.linalg.svd(mat)
-        eigenvectors = U # np.transpose(U)
-        if mat_type == "laplacian":
-            eigenvectors = eigenvectors[::-1]
-            s = s[::-1]
-
-        partition_eigenvalue  = s[1]
+        eigenvectors = np.transpose(U)
+        
+        partition_eigenvalue  = s[eigen_index]
         partition_eigenvector = np.squeeze(np.asarray(eigenvectors[eigen_index]))
 
         if k is None:
-            eigen_steps = [(s[i] - s[i-1]) / s[i-1] for i in range(1, len(s))] 
+            rev_s = s[::-1]
+            eigen_steps = [(rev_s[i] - rev_s[i-1]) for i in range(1, len(rev_s))] 
+            print(eigen_steps)
             for i, eigen_step in enumerate(eigen_steps):
-                k = i
+                k = i + 1
                 if eigen_step > EIGEN_GAP:
                     break
-        
+            print("Partitioning into {} clusters".format(k))
+
         if len(partitions) >= k:
             break
 
@@ -89,7 +88,8 @@ def spectral_analysis(G, partitions):
 def kmeans_analysis(G, clusters, k):
     L = nx.laplacian_matrix(G).todense()
     U, _, _ = np.linalg.svd(L)
-    kmeans = KMeans(n_clusters=k, random_state=0).fit(U)
+    eigenvectors = np.transpose(U)
+    kmeans = KMeans(n_clusters=k, random_state=0).fit(eigenvectors)
 
     true_labels = np.array([j for i in range(len(kmeans.labels_))
             for j, cluster in enumerate(clusters) if i in cluster])

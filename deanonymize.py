@@ -55,7 +55,7 @@ def _calc_accuracy(truth, guess):
     for i in range(len(truth)):
         num_correct += len(truth[i].intersection(guess[i]))
         total_nodes += len(truth[i])
-    return num_correct/total_nodes
+    return 100.0 * (num_correct/total_nodes)
 
 def _cmd_graph(argv):
     pca          = "y"
