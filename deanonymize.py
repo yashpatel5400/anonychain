@@ -107,13 +107,12 @@ def main(argv):
     if pca == "y":
         plot_pca(sbm, clusters, plot_2d=True, plot_3d=True, plot_lib=lib)
     
-    lap_partitions = spectral_analysis(sbm, partitions=2)
-    kmeans_analysis(sbm, clusters, len(clusters))# (len(adj_partitions) + len(lap_partitions)) // 2)
+    partitions = spectral_analysis(sbm, normalize=True)
+    kmeans_analysis(sbm, clusters, len(clusters))
 
     spring_pos = nx.spring_layout(sbm)
-    _draw_partitions(sbm, spring_pos, clusters, clusters,       "truth.png", calc_accuracy=False)
-    # _draw_partitions(sbm, spring_pos, clusters, adj_partitions, "adjacency_guess.png", calc_accuracy=True)
-    _draw_partitions(sbm, spring_pos, clusters, lap_partitions, "laplacian_guess.png", calc_accuracy=True)
+    _draw_partitions(sbm, spring_pos, clusters, clusters,   "truth.png", calc_accuracy=False)
+    _draw_partitions(sbm, spring_pos, clusters, partitions, "guess.png", calc_accuracy=True)
 
 if __name__ == "__main__":
     main(sys.argv[1:])

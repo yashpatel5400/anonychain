@@ -32,7 +32,6 @@ def _plot_eigenvalues(s, fn):
     e = [margin] * len(s)
 
     plt.errorbar(list(range(len(s))), s, yerr=e, fmt='o')
-    # plt.yscale('log')
     plt.savefig("output/{}".format(fn))
     plt.close()
 
@@ -42,19 +41,14 @@ def _plot_eigenvector(eigenvector, fn):
     plt.savefig("output/{}".format(fn))
     plt.close()
 
-def _spectral_partition(G, mat_type, normalize=True):
+def spectral_analysis(G, normalize=True):
     EIGEN_GAP = 1.0
     
-    if mat_type == "adjacency":
-        get_mat = lambda G : nx.adjacency_matrix(G).todense()
-        eigen_index = 1
-    else:
-        if normalize:
-            get_mat = lambda G : nx.normalized_laplacian_matrix(G).todense()
-        else: get_mat = lambda G : nx.laplacian_matrix(G).todense()
-        eigen_index = -2
-
-    k = 3
+    if normalize:
+        get_mat = lambda G : nx.normalized_laplacian_matrix(G).todense()
+    else: get_mat = lambda G : nx.laplacian_matrix(G).todense()
+    
+    k = 4
     partitions = [G]
     while True:
         second_least_eigenvalues = []
@@ -62,7 +56,6 @@ def _spectral_partition(G, mat_type, normalize=True):
             _, s, _ = np.linalg.svd(get_mat(partition))
             second_least_eigenvalues.append(s[-2])
 
-        # largest_partition = np.argmax(np.array([len(graph.nodes) for graph in partitions]))
         best_partition = np.argmin(np.array(second_least_eigenvalues))
         to_partition = partitions[best_partition]
         mat = get_mat(to_partition)
@@ -70,21 +63,23 @@ def _spectral_partition(G, mat_type, normalize=True):
         U, s, _ = np.linalg.svd(mat)
         eigenvectors = np.transpose(U)
         
-        partition_eigenvalue  = s[eigen_index]
-        partition_eigenvector = np.squeeze(np.asarray(eigenvectors[eigen_index]))
+        partition_eigenvalue  = s[-2]
+        partition_eigenvector = np.squeeze(np.asarray(eigenvectors[-2]))
 
-        _plot_eigenvalues(s, "{}/eigenvalues_{}.png".format(mat_type, len(partitions)))
+        _plot_eigenvalues(s, "eigen/eigenvalues_{}.png".format(len(partitions)))
         _plot_eigenvector(partition_eigenvector, 
-            "{}/eigenvector_{}.png".format(mat_type, len(partitions)))
+            "eigen/eigenvector_{}.png".format(len(partitions)))
 
         if k is None:
             smallest_eigenvalues = np.array(s[::-1][:10])
-            _plot_eigenvalues(smallest_eigenvalues, "smallest_eigenvalues.png")
             eigen_steps = [(smallest_eigenvalues[i] - smallest_eigenvalues[i-1]) 
                 for i in range(1, len(smallest_eigenvalues))] 
+            _plot_eigenvalues(smallest_eigenvalues, "smallest_eigenvalues.png")
+            _plot_eigenvalues(eigen_steps, "eigen_step.png")
+
             for i, eigen_step in enumerate(eigen_steps):
+                k = i + 1
                 if eigen_step > EIGEN_GAP:
-                    k = i + 1
                     break
             print("Partitioning into {} clusters".format(k))
 
@@ -93,16 +88,14 @@ def _spectral_partition(G, mat_type, normalize=True):
 
         new_partitions = _partition_graph(to_partition, partition_eigenvector)
         del partitions[best_partition] 
+        
+        if len(partitions + new_partitions) > k:
+            new_partitions = [new_partitions[0] + new_partitions[1], new_partitions[2]]
         partitions += new_partitions
 
         print([partition.nodes() for partition in partitions])
-    print("Completed {} partitioning w/ {} partitions".format(mat_type, k))
+    print("Completed partitioning w/ {} partitions".format(k))
     return partitions
-
-def spectral_analysis(G, partitions):
-    # adj_partitions = _spectral_partition(G, "adjacency")
-    lap_partitions = _spectral_partition(G, "laplacian", normalize=True)
-    return lap_partitions #, adj_partitions
 
 def kmeans_analysis(G, clusters, k):
     L = nx.laplacian_matrix(G).todense()
