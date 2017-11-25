@@ -12,12 +12,19 @@ import networkx as nx
 from sklearn.cluster import KMeans
 
 def _partition_graph(G, partition_eigenvector):
-    partition1, partition2 = set(), set()
+    partition1, partition2, partition3 = set(), set(), set()
     for i in range(len(partition_eigenvector)):
-        if partition_eigenvector[i] > 0:
-            partition1.add(i)
-        else: partition2.add(i)
-    return [G.subgraph(partition1), G.subgraph(partition2)]
+        cur_node = list(G.nodes())[i]
+        if partition_eigenvector[i] >= 0:
+            partition1.add(cur_node)
+        elif partition_eigenvector[i] == 0:
+            partition2.add(cur_node)
+        else: partition3.add(cur_node)
+
+    partitions = [partition1, partition2, partition3]
+    nonempty_partitions = [partition for partition in 
+        partitions if len(partition) != 0]
+    return [G.subgraph(partition) for partition in nonempty_partitions]
 
 def _plot_eigenvalues(s, fn):
     MARGIN_PROP = 0.75
@@ -25,6 +32,7 @@ def _plot_eigenvalues(s, fn):
     e = [margin] * len(s)
 
     plt.errorbar(list(range(len(s))), s, yerr=e, fmt='o')
+    # plt.yscale('log')
     plt.savefig("output/{}".format(fn))
     plt.close()
 
@@ -44,7 +52,7 @@ def _spectral_partition(G, mat_type):
         get_mat = lambda G : nx.laplacian_matrix(G).todense()
         eigen_index = -2
 
-    k = None
+    k = 3
     partitions = [G]
     while True:
         largest_partition = np.argmax(np.array([len(graph.nodes) for graph in partitions]))
@@ -57,25 +65,31 @@ def _spectral_partition(G, mat_type):
         partition_eigenvalue  = s[eigen_index]
         partition_eigenvector = np.squeeze(np.asarray(eigenvectors[eigen_index]))
 
+        print(partition_eigenvector)
+        
+        _plot_eigenvalues(s, "{}/eigenvalues_{}.png".format(mat_type, len(partitions)))
+        _plot_eigenvector(partition_eigenvector, 
+            "{}/eigenvector_{}.png".format(mat_type, len(partitions)))
+
         if k is None:
-            rev_s = s[::-1]
-            eigen_steps = [(rev_s[i] - rev_s[i-1]) for i in range(1, len(rev_s))] 
+            smallest_eigenvalues = np.array(s[::-1][:10])
+            _plot_eigenvalues(smallest_eigenvalues, "smallest_eigenvalues.png")
+            eigen_steps = [(smallest_eigenvalues[i] - smallest_eigenvalues[i-1]) 
+                for i in range(1, len(smallest_eigenvalues))] 
             for i, eigen_step in enumerate(eigen_steps):
-                if eigen_step < EIGEN_GAP:
-                    k = i
+                if eigen_step > EIGEN_GAP:
+                    k = i + 1
                     break
             print("Partitioning into {} clusters".format(k))
 
         if len(partitions) >= k:
             break
 
-        _plot_eigenvalues(s, "{}/eigenvalues_{}.png".format(mat_type, len(partitions)))
-        _plot_eigenvalues(partition_eigenvector, 
-            "{}/eigenvector_{}.png".format(mat_type, len(partitions)))
-
         new_partitions = _partition_graph(to_partition, partition_eigenvector)
         del partitions[largest_partition] 
         partitions += new_partitions
+
+        print([partition.nodes() for partition in partitions])
     print("Completed {} partitioning w/ {} partitions".format(mat_type, k))
     return partitions
 
