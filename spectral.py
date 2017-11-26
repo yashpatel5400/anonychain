@@ -54,7 +54,9 @@ def spectral_analysis(G, k=None, normalize=True):
         second_least_eigenvalues = []
         for partition in partitions:
             _, s, _ = np.linalg.svd(get_mat(partition))
-            second_least_eigenvalues.append(s[-2])
+            if len(s) > 1:
+                second_least_eigenvalues.append(s[-2])
+            else: second_least_eigenvalues.append(float("inf"))
 
         best_partition = np.argmin(np.array(second_least_eigenvalues))
         to_partition = partitions[best_partition]
