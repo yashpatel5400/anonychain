@@ -101,12 +101,24 @@ def spectral_analysis(G, k=None, normalize=True):
     return partitions
 
 def kmeans_analysis(G, clusters, k):
+    print("Partitioning w/ k-means on {} clusters".format(k))
+    
     L = nx.laplacian_matrix(G).todense()
     U, _, _ = np.linalg.svd(L)
     eigenvectors = np.transpose(U)
-    kmeans = KMeans(n_clusters=k, random_state=0).fit(eigenvectors)
+    kmeans = KMeans(n_clusters=k).fit(eigenvectors[:k])
 
-    true_labels = np.array([j for i in range(len(kmeans.labels_))
-            for j, cluster in enumerate(clusters) if i in cluster])
-    accuracy = sum(true_labels == kmeans.labels_) / len(true_labels)
-    print("K-means accuracy: {}".format(accuracy))
+    print(eigenvectors[:k])
+    
+    to_cluster = U[:, :k]
+    guesses = np.array([kmeans.predict(row)[0] for row in to_cluster])
+    
+    print(U.shape)
+    print(kmeans.cluster_centers_)
+
+    partitions = [[] for _ in range(k)]
+    for i, guess in enumerate(guesses):
+        partitions[guess].append(i)
+
+    subgraphs = [G.subgraph(partition) for partition in partitions]
+    return subgraphs
