@@ -117,7 +117,8 @@ def main(argv):
     if guess_clusters:
         partitions = spectral_analysis(sbm, k=None, normalize=True)
     else: partitions = spectral_analysis(sbm, k=len(clusters), normalize=True)
-
+    
+    print("========================================================")
     kmeans_partitions = kmeans_analysis(sbm, clusters, len(clusters))
 
     spring_pos = nx.spring_layout(sbm)

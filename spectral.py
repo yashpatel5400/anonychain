@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 import networkx as nx
 from sklearn.cluster import KMeans
 
+from scipy.sparse.linalg import svds
+
 def _partition_graph(G, partition_eigenvector):
     partition1, partition2, partition3 = set(), set(), set()
     for i in range(len(partition_eigenvector)):
@@ -46,27 +48,31 @@ def spectral_analysis(G, k=None, normalize=True):
     EIGEN_GAP = 0.1
     
     if normalize:
-        get_mat = lambda G : nx.normalized_laplacian_matrix(G).todense()
-    else: get_mat = lambda G : nx.laplacian_matrix(G).todense()
+        # get_mat = lambda G : nx.normalized_laplacian_matrix(G).todense()
+        get_mat = lambda G : nx.normalized_laplacian_matrix(G).asfptype()
+    else: 
+        # get_mat = lambda G : nx.laplacian_matrix(G).todense()
+        get_mat = lambda G : nx.laplacian_matrix(G).asfptype()
     
     partitions = [G]
     while True:
         second_least_eigenvalues = []
         for partition in partitions:
-            _, s, _ = np.linalg.svd(get_mat(partition))
+            # _, s, _ = np.linalg.svd(get_mat(partition))
+            mat = get_mat(partition)
+            _, s, _ = svds(mat, k=2, which='SM', return_singular_vectors=True)
             if len(s) > 1:
-                second_least_eigenvalues.append(s[-2])
+                second_least_eigenvalues.append(s[1])
             else: second_least_eigenvalues.append(float("inf"))
 
         best_partition = np.argmin(np.array(second_least_eigenvalues))
         to_partition = partitions[best_partition]
         mat = get_mat(to_partition)
-
-        U, s, _ = np.linalg.svd(mat)
-        eigenvectors = np.transpose(U)
         
-        partition_eigenvalue  = s[-2]
-        partition_eigenvector = np.squeeze(np.asarray(eigenvectors[-2]))
+        # U, s, _ = np.linalg.svd(mat)
+        U, s, _ = svds(mat, k=2, which='SM', return_singular_vectors=True)
+        eigenvectors = np.transpose(U)
+        partition_eigenvector = np.squeeze(np.asarray(U[:, 1]))
 
         _plot_eigenvalues(s, "eigen/eigenvalues_{}.png".format(len(partitions)))
         _plot_eigenvector(partition_eigenvector, 
@@ -103,13 +109,16 @@ def spectral_analysis(G, k=None, normalize=True):
 def kmeans_analysis(G, clusters, k):
     print("Partitioning w/ k-means on {} clusters".format(k))
     
-    L = nx.laplacian_matrix(G).todense()
-    U, _, _ = np.linalg.svd(L)
-    guesses = KMeans(n_clusters=k).fit_predict(U[:, -k:])
+    L = nx.laplacian_matrix(G).asfptype()
+    # U, _, _ = np.linalg.svd(L)
+    U, _, _ = svds(L, k=k, which='SM', return_singular_vectors=True)
+
+    guesses = KMeans(n_clusters=k, n_jobs=-1).fit_predict(U)
     
     partitions = [[] for _ in range(k)]
     for i, guess in enumerate(guesses):
         partitions[guess].append(i)
 
     subgraphs = [G.subgraph(partition) for partition in partitions]
+    print("Completed k-means partitioning")
     return subgraphs
