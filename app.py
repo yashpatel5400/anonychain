@@ -11,16 +11,8 @@ matplotlib.use('Agg')
 import sys, getopt
 
 from plot_pca import plot_pca
-from sbm import create_sbm
+from sbm import create_sbm, create_clusters
 from deanonymize import draw_partitions, calc_accuracy, deanonymize
-
-def _create_clusters(cluster_sizes):
-    completed_nodes = 0
-    clusters = []
-    for cluster_size in cluster_sizes:
-        clusters.append(set(range(completed_nodes, completed_nodes + cluster_size)))
-        completed_nodes += cluster_size
-    return clusters
 
 def _cmd_graph(argv):
     pca             = "y"
@@ -69,7 +61,7 @@ def _cmd_graph(argv):
     else:
         cluster_sizes = [cluster_size] * num_clusters
 
-    clusters = _create_clusters(cluster_sizes)
+    clusters = create_clusters(cluster_sizes)
     return clusters, guess_clusters, pca, p, q, lib
 
 def main(argv):

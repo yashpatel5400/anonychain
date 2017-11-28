@@ -7,7 +7,17 @@ __description__ = Investigating eigenvalues of SBM model (toy examples)
 import random
 import networkx as nx
 import numpy as np
+
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+def create_clusters(cluster_sizes):
+    completed_nodes = 0
+    clusters = []
+    for cluster_size in cluster_sizes:
+        clusters.append(set(range(completed_nodes, completed_nodes + cluster_size)))
+        completed_nodes += cluster_size
+    return clusters
 
 def create_sbm(clusters, p, q):
     """
