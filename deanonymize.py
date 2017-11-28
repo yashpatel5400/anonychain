@@ -118,11 +118,15 @@ def main(argv):
         partitions = spectral_analysis(sbm, k=None, normalize=True)
     else: partitions = spectral_analysis(sbm, k=len(clusters), normalize=True)
 
-    kmeans_analysis(sbm, clusters, len(clusters))
+    kmeans_partitions = kmeans_analysis(sbm, clusters, len(clusters))
 
     spring_pos = nx.spring_layout(sbm)
-    _draw_partitions(sbm, spring_pos, clusters, clusters,   "truth.png", calc_accuracy=False)
-    _draw_partitions(sbm, spring_pos, clusters, partitions, "guess.png", calc_accuracy=True)
+    _draw_partitions(sbm, spring_pos, clusters, 
+        clusters,   "truth.png", calc_accuracy=False)
+    _draw_partitions(sbm, spring_pos, clusters, 
+        partitions, "eigen_guess.png", calc_accuracy=True)
+    _draw_partitions(sbm, spring_pos, clusters, 
+        kmeans_partitions, "kmean_guess.png", calc_accuracy=True)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
