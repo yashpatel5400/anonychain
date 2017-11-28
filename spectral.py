@@ -57,22 +57,32 @@ def spectral_analysis(G, k=None, normalize=True):
     partitions = [G]
     while True:
         second_least_eigenvalues = []
-        for partition in partitions:
-            # _, s, _ = np.linalg.svd(get_mat(partition))
-            mat = get_mat(partition)
-            _, s, _ = svds(mat, k=2, which='SM', return_singular_vectors=True)
-            if len(s) > 1:
-                second_least_eigenvalues.append(s[1])
-            else: second_least_eigenvalues.append(float("inf"))
 
-        best_partition = np.argmin(np.array(second_least_eigenvalues))
-        to_partition = partitions[best_partition]
-        mat = get_mat(to_partition)
-        
-        # U, s, _ = np.linalg.svd(mat)
-        U, s, _ = svds(mat, k=2, which='SM', return_singular_vectors=True)
-        eigenvectors = np.transpose(U)
-        partition_eigenvector = np.squeeze(np.asarray(U[:, 1]))
+        min_partition_eigenvalue = None
+        best_partition = None
+        partition_eigenvector = None
+
+        for i, partition in enumerate(partitions):
+            if len(partition.nodes) > 1:
+                mat = get_mat(partition)
+                
+                # in the case of having 2 nodes, the 2nd least eigenvalue is the largest eigenvalue
+                if len(partition.nodes) == 2:
+                    U, s, _ = svds(mat, k=1, which='LM', return_singular_vectors="u")
+                    cur_eigenvector = U[:, 0]
+                    partition_eigenvalue = s[0]
+                
+                # else we can just use the smallest two eigenvalues
+                else:
+                    U, s, _ = svds(mat, k=2, which='SM', return_singular_vectors="u")
+                    cur_eigenvector = U[:, 1]
+                    partition_eigenvalue = s[1]
+                
+                # _, s, _ = np.linalg.svd(get_mat(partition))
+                if min_partition_eigenvalue is None or partition_eigenvalue < min_partition_eigenvalue:
+                    best_partition = i
+                    partition_eigenvector = cur_eigenvector
+                    min_partition_eigenvalue = partition_eigenvalue
 
         _plot_eigenvalues(s, "eigen/eigenvalues_{}.png".format(len(partitions)))
         _plot_eigenvector(partition_eigenvector, 
@@ -95,7 +105,7 @@ def spectral_analysis(G, k=None, normalize=True):
         if len(partitions) >= k:
             break
 
-        new_partitions = _partition_graph(to_partition, partition_eigenvector)
+        new_partitions = _partition_graph(partitions[best_partition], partition_eigenvector)
         del partitions[best_partition] 
         
         if len(partitions + new_partitions) > k:
@@ -111,7 +121,7 @@ def kmeans_analysis(G, clusters, k):
     
     L = nx.laplacian_matrix(G).asfptype()
     # U, _, _ = np.linalg.svd(L)
-    U, _, _ = svds(L, k=k, which='SM', return_singular_vectors=True)
+    U, _, _ = svds(L, k=k, which='SM', return_singular_vectors="u")
 
     guesses = KMeans(n_clusters=k, n_jobs=-1).fit_predict(U)
     
