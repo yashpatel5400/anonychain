@@ -105,17 +105,8 @@ def kmeans_analysis(G, clusters, k):
     
     L = nx.laplacian_matrix(G).todense()
     U, _, _ = np.linalg.svd(L)
-    eigenvectors = np.transpose(U)
-    kmeans = KMeans(n_clusters=k).fit(eigenvectors[:k])
-
-    print(eigenvectors[:k])
+    guesses = KMeans(n_clusters=k).fit_predict(U[:, -k:])
     
-    to_cluster = U[:, :k]
-    guesses = np.array([kmeans.predict(row)[0] for row in to_cluster])
-    
-    print(U.shape)
-    print(kmeans.cluster_centers_)
-
     partitions = [[] for _ in range(k)]
     for i, guess in enumerate(guesses):
         partitions[guess].append(i)
