@@ -109,14 +109,14 @@ def spectral_analysis(G, k=None, normalize=True):
         del partitions[best_partition] 
         
         if len(partitions + new_partitions) > k:
-            new_partitions = [new_partitions[0] + new_partitions[1], new_partitions[2]]
+            new_partitions = [nx.compose(new_partitions[0], new_partitions[1]), new_partitions[2]]
         partitions += new_partitions
 
         print([partition.nodes() for partition in partitions])
     print("Completed partitioning w/ {} partitions".format(k))
     return partitions
 
-def kmeans_analysis(G, clusters, k):
+def kmeans_analysis(G, k):
     print("Partitioning w/ k-means on {} clusters".format(k))
     
     L = nx.laplacian_matrix(G).asfptype()
