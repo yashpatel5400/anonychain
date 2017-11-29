@@ -11,9 +11,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from sbm import create_sbm, create_clusters
-from deanonymize import calc_accuracy, deanonymize
-from constants import colors
+from setup.sbm import create_sbm, create_clusters
+from analysis.deanonymize import calc_accuracy, deanonymize
 
 def conduct_tests(ps, qs, css):
     trials = 5

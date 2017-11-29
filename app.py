@@ -11,9 +11,9 @@ matplotlib.use('Agg')
 import sys, getopt
 import subprocess
 
-from plot_pca import plot_pca
-from sbm import create_sbm, create_clusters
-from deanonymize import draw_partitions, calc_accuracy, deanonymize
+from setup.sbm import create_sbm, create_clusters
+from analysis.pca import plot_pca
+from analysis.deanonymize import draw_partitions, calc_accuracy, deanonymize
 
 def _cmd_graph(argv):
     pca             = "y"

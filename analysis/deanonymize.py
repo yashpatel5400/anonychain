@@ -9,8 +9,8 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
 
-from constants import colors
-from spectral import spectral_analysis, kmeans_analysis
+from analysis.constants import colors
+from analysis.spectral import spectral_analysis, kmeans_analysis
 
 def _reorder_clusters(clusters, partitions):
     reordered_partitions = [None for _ in clusters]

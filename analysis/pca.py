@@ -1,6 +1,6 @@
 """
 __author__ = Yash Patel
-__name__   = plot_pca.py
+__name__   = pca.py
 __description__ = Functions to plot PCA results (for 2, 3 dimensions)
 """
 
@@ -14,7 +14,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import plotly
 from plotly.graph_objs import Scatter, Scatter3d, Layout
 
-from constants import colors
+from analysis.constants import colors
 
 def _plot_clusters_2d(colors, A, plot_lib):
     pca = PCA(n_components=2)
