@@ -23,7 +23,7 @@ def conduct_tests(ps, qs, css):
 
         for p in ps:
             hier_accuracies, kmeans_accuracies = [], []
-            for q in qs:
+            for i, q in enumerate(qs):
                 if q > p: break
                 
                 hier_trials, kmeans_trials = [], []
@@ -39,23 +39,23 @@ def conduct_tests(ps, qs, css):
                 hier_accuracies.append(np.mean(hier_trials))
                 kmeans_accuracies.append(np.mean(kmeans_trials))
 
-            print("Completed accuracy for: q={}, cs={}".format(q, cs))
-            for accuracies, fn in zip([hier_accuracies, kmeans_accuracies],
-                ["hierarchical.png", "kmeans.png"]):
+            print("Completed accuracy for: p={}, cs={}".format(p, cs))
+            for accuracies, label in zip([hier_accuracies, kmeans_accuracies],
+                ["hierarchical", "kmeans"]):
 
                 fig = plt.figure()
-                plt.scatter(ps, accuracies, c=colors)
+                plt.scatter(qs[:i], accuracies)
                 
-                plt.title("{} vs. p".format(fn))
-                plt.xlabel("p")
+                plt.title("{} vs. q (p={}_cs={})".format(label, p,cs))
+                plt.xlabel("q")
                 plt.ylabel("accuracy (%_correct)")
 
-                plt.savefig("output/accuracy/q={}_cs={}_{}".format(q,cs,fn))
+                plt.savefig("output/accuracy/p={}_cs={}_{}.png".format(p, cs, label))
                 plt.close()
 
 def main():
-    ps  = [i / 10 for i in range(1)]
-    qs  = [i / 10 for i in range(1)]
+    ps  = [i / 10 for i in range(10)]
+    qs  = [i / 10 for i in range(10)]
 
     css = [
         [5,4,3,2]

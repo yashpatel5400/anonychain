@@ -9,6 +9,7 @@ import matplotlib
 matplotlib.use('Agg')
 
 import sys, getopt
+import subprocess
 
 from plot_pca import plot_pca
 from sbm import create_sbm, create_clusters
@@ -83,4 +84,8 @@ def main(argv):
     draw_partitions(sbm, spring_pos, clusters, kmeans_partitions, "kmean_guess.png")
 
 if __name__ == "__main__":
+    print("Cleaning up directories...")
+    subprocess.call("./clean.sh", shell=True)
+
+    print("Performing SBM creation and segmentations...")
     main(sys.argv[1:])
