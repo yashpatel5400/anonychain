@@ -1,5 +1,5 @@
 Anonychain
-~~~~~~~~~~~~~~~~~~
+=====================
 Princeton Thesis 2017 (De-anonymization of Blockchain transcations)
 
 Attempting to deanonymize wallets/addresses using a combination of ground truth labels of Bitcoin transactions and nodes, some similarity heuristics between nodes based on behavioral patterns, and clustering techniques (mostly spectral methods). Current deanonymization techniques mostly make use of union-find, which we wish to expand upon here.
