@@ -34,7 +34,7 @@ def _cmd_graph(argv):
             -g <guess_bool>      [(y/n) to guess the number of clusters vs. take it as known] 
             -p <p_value>         [(0,1) for in-cluster probability]
             -q <q_value>         [(0,1) for non-cluster probability] 
-            --cs <cluster_sizes> [(int lisst) size of each cluster (comma delimited)]
+            --cs <cluster_sizes> [(int list) size of each cluster (comma delimited)]
             --lib                [('matplotlib','plotly') for plotting library]"""
 
     try:
