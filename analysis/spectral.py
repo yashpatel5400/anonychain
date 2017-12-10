@@ -104,6 +104,8 @@ def spectral_analysis(G, k=None, normalize=True):
         if len(partitions) >= k:
             break
 
+        print(best_partition)
+
         new_partitions = _partition_graph(partitions[best_partition], partition_eigenvector)
         del partitions[best_partition] 
         
