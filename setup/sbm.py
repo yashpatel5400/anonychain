@@ -24,6 +24,7 @@ def create_sbm(clusters, p, q, is_weighted):
     creates a stochastic block model, with probability p within the same
     cluster and probability q outside, with n vertices
     """
+    print("Constructing SBM graph...")
     G = nx.Graph()
     total_nodes = sum([len(cluster) for cluster in clusters])
     G.add_nodes_from(list(range(total_nodes)))
