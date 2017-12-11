@@ -9,6 +9,10 @@ import subprocess
 import networkx as nx
 from networkx.drawing.nx_agraph import write_dot
 
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
 def _read_in_chunks(file_object, chunk_size=900):
     while True:
         data = file_object.read(chunk_size)
@@ -20,7 +24,7 @@ def _plot_graph(G):
     write_dot(G,'multi.dot')
     subprocess.call("./convert.sh", shell=True)
 
-def create_graph(fn):
+def create_multi_graph(fn):
     G = nx.MultiGraph()
     f = open(fn, "rb")
     
@@ -41,5 +45,31 @@ def create_graph(fn):
     _plot_graph(G)
     return G
 
+def create_simple_graph(fn):
+    G = nx.MultiGraph()
+    f = open(fn, "rb")
+
+    for chunk in _read_in_chunks(f):
+        # raw format: address1ID (4 bytes) address2ID (4 bytes) Heuristics(1 byte)
+        for sequence_start in range(0, len(chunk), 9):
+            address1ID = chunk[sequence_start:(sequence_start+4)] 
+            address2ID = chunk[(sequence_start+4):(sequence_start+8)]
+            heuristic  = chunk[sequence_start+8]
+            if G.has_edge(address1ID, address2ID):
+                G.add_edge(address1ID, address2ID, 
+                    weight=G[address1ID][address2ID][0]["weight"] + 1)
+            else:
+                G.add_edge(address1ID, address2ID, weight=1)
+    return G
+
 if __name__ == "__main__":
-    G = create_graph("graph.dat")
+    G = create_simple_graph("graph.dat")
+
+    edgewidth = [d['weight'] for (u,v,d) in G.edges(data=True)]
+    pos = nx.spring_layout(G)
+    nx.draw_networkx_nodes(G, pos)
+    nx.draw_networkx_edges(G, pos, width=edgewidth)
+
+    plt.axis('off')
+    plt.savefig("graph.png")
+    plt.close()
