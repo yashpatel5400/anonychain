@@ -1,1 +1,1 @@
-neato -T png multi.dot > multi.png
+neato -T png blockchain/multi_blockchain.dot > blockchain/multi_blockchain.png

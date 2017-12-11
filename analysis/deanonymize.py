@@ -23,10 +23,11 @@ def _reorder_clusters(clusters, partitions):
         reordered_partitions[i] = partitions[most_similar]
     return reordered_partitions
 
-def draw_partitions(G, pos, clusters, partitions, fn):
-    guessed_colors = [colors[j] for i in range(len(G.nodes))
-        for j, partition in enumerate(partitions) if i in partition]
-
+def draw_partitions(G, pos, partitions, fn):
+    print("Plotting graph partitions...")
+    nodes = list(G.nodes)
+    guessed_colors = [colors[j] for i in range(len(nodes))
+        for j, partition in enumerate(partitions) if nodes[i] in partition]
     nx.draw(G, pos, node_size=100, node_color=guessed_colors)
     plt.savefig("output/{}".format(fn))
     plt.close()
@@ -44,6 +45,7 @@ def calc_accuracy(truth, guess):
     return 0.0
 
 def deanonymize(G, k):
+    print("Running partitioning analyses on graph...")
     hier_partitions = spectral_analysis(G, k=k)
     kmeans_partitions = kmeans_analysis(G, k=k)
     return hier_partitions, kmeans_partitions
