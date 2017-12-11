@@ -19,7 +19,7 @@ def create_clusters(cluster_sizes):
         completed_nodes += cluster_size
     return clusters
 
-def create_sbm(clusters, p, q):
+def create_sbm(clusters, p, q, weighted):
     """
     creates a stochastic block model, with probability p within the same
     cluster and probability q outside, with n vertices
