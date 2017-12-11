@@ -19,7 +19,7 @@ def create_clusters(cluster_sizes):
         completed_nodes += cluster_size
     return clusters
 
-def create_sbm(clusters, p, q, weighted):
+def create_sbm(clusters, p, q, is_weighted):
     """
     creates a stochastic block model, with probability p within the same
     cluster and probability q outside, with n vertices
@@ -45,11 +45,17 @@ def create_sbm(clusters, p, q, weighted):
                     prob = q
                     diff_cluster_nodes += 1                    
 
-                if random.random() < prob:
+                join_prob = random.random()
+                if join_prob < prob:
                     if other_node in cluster:
                         verify_same += 1
                     else: verify_diff += 1
-                    G.add_edge(cur_node, other_node)
+
+                    if is_weighted:
+                        random_weight = 1 - join_prob
+                        G.add_edge(cur_node, other_node, weight=random_weight)
+                    else:
+                        G.add_edge(cur_node, other_node)
 
     print("Prop same: {}; Prop diff: {}".format(
         verify_same/same_cluster_nodes, verify_diff/diff_cluster_nodes))

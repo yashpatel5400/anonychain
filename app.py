@@ -40,7 +40,7 @@ def _cmd_graph(argv):
             --lib                [('matplotlib','plotly') for plotting library]"""
 
     try:
-        opts, args = getopt.getopt(argv,"hd:c:n:g:p:q:",['lib=','cs='])
+        opts, args = getopt.getopt(argv,"hd:c:n:g:p:q:w:",['lib=','cs='])
     except getopt.GetoptError:
         print("Using default values. To change use: \n{}".format(USAGE_STRING))
 
@@ -49,7 +49,7 @@ def _cmd_graph(argv):
             print(USAGE_STRING)
             sys.exit()
         elif opt in ("-d"): params["pca"] = arg
-        elif opt in ("-w"): params["weighted"] = arg
+        elif opt in ("-w"): params["weighted"] = (arg == "y")
         elif opt in ("-c"): params["cluster_size"] = int(arg)
         elif opt in ("-n"): params["num_clusters"] = int(arg)
         elif opt in ("-g"): params["guess_clusters"] = (arg == "y")
