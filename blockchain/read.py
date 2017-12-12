@@ -20,19 +20,9 @@ def _read_in_chunks(file_object, chunk_size=900):
             break
         yield data
 
-def _plot_multi_graph(G):
+def plot_multi_graph(G):
     write_dot(G,'blockchain/multi_blockchain.dot')
     subprocess.call("./convert.sh", shell=True)
-
-def _plot_simple_graph(G):
-    edgewidth = [d['weight'] for (u,v,d) in G.edges(data=True)]
-    pos = nx.spring_layout(G)
-    nx.draw_networkx_nodes(G, pos)
-    nx.draw_networkx_edges(G, pos, width=edgewidth)
-
-    plt.axis('off')
-    plt.savefig("blockchain/simple_blockchain.png")
-    plt.close()
 
 def create_multi_graph(fn):
     print("Reading blockchain graph as multi graph...")
@@ -53,7 +43,6 @@ def create_multi_graph(fn):
                 G.add_node(address2ID)
                 nodes.add(address2ID)
             G.add_edge(address1ID, address2ID, heuristic=heuristic)
-    _plot_multi_graph(G)
     return G
 
 def create_simple_graph(fn):
@@ -72,7 +61,6 @@ def create_simple_graph(fn):
                     weight=G[address1ID][address2ID][0]["weight"] + 1)
             else:
                 G.add_edge(address1ID, address2ID, weight=1)
-    _plot_simple_graph(G)
     return G
 
 if __name__ == "__main__":

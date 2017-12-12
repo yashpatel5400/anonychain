@@ -23,12 +23,23 @@ def _reorder_clusters(clusters, partitions):
         reordered_partitions[i] = partitions[most_similar]
     return reordered_partitions
 
-def draw_partitions(G, pos, partitions, fn):
+def draw_partitions(G, pos, partitions, fn, weigh_edges=False):
     print("Plotting graph partitions...")
     nodes = list(G.nodes)
-    guessed_colors = [colors[j] for i in range(len(nodes))
-        for j, partition in enumerate(partitions) if nodes[i] in partition]
-    nx.draw(G, pos, node_size=100, node_color=guessed_colors)
+    if partitions is None:
+        guessed_colors = ["r"] * len(nodes)
+    else:
+        guessed_colors = [colors[j] for i in range(len(nodes))
+            for j, partition in enumerate(partitions) if nodes[i] in partition]
+    
+    if weigh_edges:
+        edgewidth = [d['weight'] for (u,v,d) in G.edges(data=True)]
+        nx.draw_networkx_nodes(G, pos, node_size=100, node_color=guessed_colors)
+        nx.draw_networkx_edges(G, pos, width=edgewidth)
+    else:
+        nx.draw(G, pos, node_size=100, node_color=guessed_colors)
+
+    plt.axis('off')
     plt.savefig("output/{}".format(fn))
     plt.close()
 
