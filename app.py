@@ -81,6 +81,7 @@ def main(argv):
         G = create_sbm(clusters, params["p"], params["q"], params["weighted"])
         plot_pca(G, clusters, plot_2d=True, plot_3d=True, plot_lib=params["lib"])
     else:
+        clusters = None
         G = create_simple_graph("blockchain/graph.dat")
 
     if params["guess_clusters"]:
@@ -96,10 +97,15 @@ def main(argv):
     if params["run_test"]:
         print("hierarchical accuracy: {}".format(calc_accuracy(clusters, hier_partitions)))
         print("k-means accuracy: {}".format(calc_accuracy(clusters, kmeans_partitions)))
-        draw_partitions(G, spring_pos, clusters, "truth.png")
+        weigh_edges = False
+    else:
+        weigh_edges = True
 
-    draw_partitions(G, spring_pos, hier_partitions, "eigen_guess.png")
-    draw_partitions(G, spring_pos, kmeans_partitions, "kmean_guess.png")
+    draw_partitions(G, spring_pos, clusters, "truth.png", weigh_edges=weigh_edges)
+    draw_partitions(G, spring_pos, hier_partitions, 
+        "eigen_guess.png", weigh_edges=weigh_edges)
+    draw_partitions(G, spring_pos, kmeans_partitions, 
+        "kmeans_guess.png", weigh_edges=weigh_edges)
 
 if __name__ == "__main__":
     print("Cleaning up directories...")
