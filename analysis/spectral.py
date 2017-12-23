@@ -115,6 +115,9 @@ def spectral_analysis(G, k=None, normalize=True):
 
         print([partition.nodes() for partition in partitions])
     print("Completed partitioning w/ {} partitions".format(k))
+    # return partitions
+
+    partitions = [set(partition.nodes()) for partition in partitions]
     return partitions
 
 def kmeans_analysis(G, k):
@@ -126,10 +129,11 @@ def kmeans_analysis(G, k):
 
     guesses = KMeans(n_clusters=k, n_jobs=-1).fit_predict(U)
     
-    partitions = [[] for _ in range(k)]
+    partitions = [set() for _ in range(k)]
     for i, guess in enumerate(guesses):
-        partitions[guess].append(i)
+        partitions[guess].add(i)
 
-    subgraphs = [G.subgraph(partition) for partition in partitions]
+    # subgraphs = [G.subgraph(partition) for partition in partitions]
     print("Completed k-means partitioning")
-    return subgraphs
+    # return subgraphs
+    return partitions
