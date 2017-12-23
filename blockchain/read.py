@@ -13,9 +13,13 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-def _read_in_chunks(file_object, chunk_size=900):
+def _read_in_chunks(file_object, chunk_size=9000):
+    i=0
     while True:
+        if i % 1000 == 0:
+            print(i)
         data = file_object.read(chunk_size)
+        i += 1
         if not data:
             break
         yield data
