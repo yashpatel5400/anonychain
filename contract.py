@@ -33,22 +33,25 @@ def _reconstruct_contracted(identified_nodes, partitions):
                 break
     return partitions
 
-def contract_deanonymize(G, k):
-    contracted_G, identified_nodes = _contract_edges(G, num_edges=10)
+def contract_deanonymize(G, k, to_contract):
+    contracted_G, identified_nodes = _contract_edges(G, num_edges=to_contract)
     hier_partitions, kmeans_partitions = deanonymize(contracted_G, k=k)
-    hier_partitions = _reconstruct_contracted(identified_nodes, hier_partitions)
+    hier_partitions   = _reconstruct_contracted(identified_nodes, hier_partitions)
     kmeans_partitions = _reconstruct_contracted(identified_nodes, kmeans_partitions)
     return hier_partitions, kmeans_partitions
 
-def test_contract():
+def single_contract_test(params):
     cluster_size = 8
     num_clusters = 5
     cluster_sizes = [cluster_size] * num_clusters
     clusters = create_clusters(cluster_sizes)
 
-    G = create_sbm(clusters, 1.0, 0.0, False)
+    G = create_sbm(clusters, params["p"], params["q"], False)
+    to_contract = int(len(G.edges) * params["percent_edges"])
+
     num_clusters = len(clusters)
-    hier_partitions, kmeans_partitions = contract_deanonymize(G, k=num_clusters)
+    hier_partitions, kmeans_partitions = contract_deanonymize(G, 
+        k=num_clusters, to_contract=to_contract)
     
     print("hierarchical accuracy: {}".format(calc_accuracy(clusters, hier_partitions)))
     print("k-means accuracy: {}".format(calc_accuracy(clusters, kmeans_partitions)))
@@ -61,5 +64,14 @@ def test_contract():
     draw_partitions(G, spring_pos, kmeans_partitions, 
         "contraction/kmeans_guess.png", weigh_edges=False)
 
+def contract_tests():
+    params = {
+        "p"          : .75,
+        "q"          : 0.15,
+        "percent_edges"  : 0.0,
+    }
+
+    single_contract_test(params)
+
 if __name__ == "__main__":
-    test_contract()
+    contract_tests()
