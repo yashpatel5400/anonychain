@@ -105,8 +105,8 @@ def contract_tests():
                     hier_trial.append(hier_accuracy)
                     kmeans_trial.append(kmeans_accuracy)
 
-                hier_accuracies.append(np.mean(hier_trial))
-                kmeans_accuracies.append(np.mean(kmeans_trial))
+                hier_accuracies.append(np.median(hier_trial))
+                kmeans_accuracies.append(np.median(kmeans_trial))
 
             for graph_type, accuracy in \
                 zip(["hierarchical","kmeans"], [hier_accuracies,kmeans_accuracies]):
