@@ -4,6 +4,7 @@ __name__   = contract.py
 __description__ = Main contractions script
 """
 
+import numpy as np
 import networkx as nx
 import matplotlib
 import random
@@ -33,11 +34,31 @@ def _reconstruct_contracted(identified_nodes, partitions):
                 break
     return partitions
 
-def contract_deanonymize(G, k, to_contract):
+def plot_graphs(G, contracted_G):
+    print("Plotting contracted graph...")
+    contracted_pos = nx.spring_layout(contracted_G)
+    nx.draw(contracted_G, contracted_pos)
+    plt.axis('off')
+    plt.savefig("output/contraction/graph.png")
+    plt.close()
+
+    spring_pos = nx.spring_layout(G)
+    draw_partitions(G, spring_pos, clusters, 
+        "contraction/truth.png", weigh_edges=False)
+    draw_partitions(G, spring_pos, hier_partitions, 
+        "contraction/eigen_guess.png", weigh_edges=False)
+    draw_partitions(G, spring_pos, kmeans_partitions, 
+        "contraction/kmeans_guess.png", weigh_edges=False)
+
+def contract_deanonymize(G, k, to_contract, to_plot=False):
     contracted_G, identified_nodes = _contract_edges(G, num_edges=to_contract)
+
     hier_partitions, kmeans_partitions = deanonymize(contracted_G, k=k)
     hier_partitions   = _reconstruct_contracted(identified_nodes, hier_partitions)
     kmeans_partitions = _reconstruct_contracted(identified_nodes, kmeans_partitions)
+
+    if to_plot:
+        plot_graphs(G, contracted_G)
     return hier_partitions, kmeans_partitions
 
 def single_contract_test(params):
@@ -53,25 +74,38 @@ def single_contract_test(params):
     hier_partitions, kmeans_partitions = contract_deanonymize(G, 
         k=num_clusters, to_contract=to_contract)
     
-    print("hierarchical accuracy: {}".format(calc_accuracy(clusters, hier_partitions)))
-    print("k-means accuracy: {}".format(calc_accuracy(clusters, kmeans_partitions)))
-    
-    spring_pos = nx.spring_layout(G)
-    draw_partitions(G, spring_pos, clusters, 
-        "contraction/truth.png", weigh_edges=False)
-    draw_partitions(G, spring_pos, hier_partitions, 
-        "contraction/eigen_guess.png", weigh_edges=False)
-    draw_partitions(G, spring_pos, kmeans_partitions, 
-        "contraction/kmeans_guess.png", weigh_edges=False)
+    hier_accuracy   = calc_accuracy(clusters, hier_partitions)
+    kmeans_accuracy = calc_accuracy(clusters, kmeans_partitions)
+
+    print("hierarchical accuracy: {}".format(hier_accuracy))
+    print("k-means accuracy: {}".format(kmeans_accuracy))
+    return hier_accuracy, kmeans_accuracy
 
 def contract_tests():
-    params = {
-        "p"          : .75,
-        "q"          : 0.15,
-        "percent_edges"  : 0.0,
-    }
+    edge_percents = np.arange(0, .30, 0.1)
+    for p in np.arange(0, 1.0, 0.1):
+        for q in np.arange(0, p, 0.1):
+            hier_accuracies   = []
+            kmeans_accuracies = []
 
-    single_contract_test(params)
+            for percent_edges in edge_percents:
+                params = {
+                    "p"          : .75,
+                    "q"          : 0.15,
+                    "percent_edges"  : 0.0,
+                }
+                
+                hier_accuracy, kmeans_accuracy = single_contract_test(params)
+                hier_accuracies.append(hier_accuracy)
+                kmeans_accuracies.append(kmeans_accuracy)
+
+            for graph_type, accuracy in \
+                zip(["hierarchical, kmeans"], [hier_accuracies,kmeans_accuracies]):
+
+                plt.title("{} {} {}".format(graph_type,p,q))
+                plt.plot(edge_percents, accuracy)
+                plt.savefig("output/contraction/{}_{}_{}.png".format(graph_type,p,q))
+                plt.close()
 
 if __name__ == "__main__":
     contract_tests()
