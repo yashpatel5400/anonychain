@@ -1,0 +1,12 @@
+{
+  "nodes":[
+		{"name":"node1"},
+		{"name":"node2"},
+		{"name":"node3"},
+		{"name":"node4"}
+	],
+	"links":[
+		{"source":3,"target":1,"weight":1},
+		{"source":0,"target":2,"weight":3}
+	]
+}
