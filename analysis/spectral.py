@@ -43,7 +43,7 @@ def _plot_eigenvector(eigenvector, fn):
     plt.savefig("output/{}".format(fn))
     plt.close()
 
-def spectral_analysis(G, k=None, normalize=True):
+def spectral_analysis_alt(G, k=None, normalize=True):
     mat = nx.normalized_laplacian_matrix(G).todense()
     threshold_for_bug = 0.00000001 # could be any value, ex numpy.min
     mat[mat < threshold_for_bug] = threshold_for_bug
@@ -56,7 +56,7 @@ def spectral_analysis(G, k=None, normalize=True):
         partitions[guess].add(i)
     return partitions
 
-def spectral_analysis_manual(G, k=None, normalize=True):
+def spectral_analysis(G, k=None, normalize=True):
     EIGEN_GAP = 0.1
     
     if normalize:

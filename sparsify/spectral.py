@@ -26,13 +26,15 @@ def sparsify(G, epsilon=.5):
         chi_e = basis_vectors[u] - basis_vectors[v]
         p_e = np.matmul(np.matmul(np.transpose(chi_e), L_inv), chi_e)
         w_e = 0
+
         for i in range(rho):
             Z_i = int(random.random() < p_e)
             w_e += Z_i / (rho * p_e)
-        
+        print(w_e)
         if w_e == 0:
             to_remove.append(e)
 
+    print("Sparsificiation complete: Deleted {} edges".format(len(to_remove)))
     for e in to_remove:
         G.remove_edge(*e)
 
@@ -45,7 +47,9 @@ def plot(G, fn):
     plt.close()
 
 def main():
-    G = nx.gnp_random_graph(25, 0.75)
+    # G = nx.gnp_random_graph(25, 0.75)
+    # G = nx.krackhardt_kite_graph()
+    G = nx.binomial_graph(25, .25)
     plot(G, "original")
     sparsify(G, epsilon=.05)
     plot(G, "sparse")
