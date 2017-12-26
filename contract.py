@@ -82,25 +82,34 @@ def single_contract_test(params):
     return hier_accuracy, kmeans_accuracy
 
 def contract_tests():
-    edge_percents = np.arange(0, .30, 0.1)
+    edge_percents = np.arange(0, .30, 0.03)
+    num_trials    = 10
+
     for p in np.arange(0, 1.0, 0.1):
         for q in np.arange(0, p, 0.1):
             hier_accuracies   = []
             kmeans_accuracies = []
 
             for percent_edges in edge_percents:
-                params = {
-                    "p"          : .75,
-                    "q"          : 0.15,
-                    "percent_edges"  : 0.0,
-                }
+                hier_trial   = []
+                kmeans_trial = []
                 
-                hier_accuracy, kmeans_accuracy = single_contract_test(params)
-                hier_accuracies.append(hier_accuracy)
-                kmeans_accuracies.append(kmeans_accuracy)
+                for trial in range(num_trials):
+                    params = {
+                        "p"          : .75,
+                        "q"          : 0.15,
+                        "percent_edges"  : 0.0,
+                    }
+                    
+                    hier_accuracy, kmeans_accuracy = single_contract_test(params)
+                    hier_trial.append(hier_accuracy)
+                    kmeans_trial.append(kmeans_accuracy)
+
+                hier_accuracies.append(np.mean(hier_trial))
+                kmeans_accuracies.append(np.mean(kmeans_trial))
 
             for graph_type, accuracy in \
-                zip(["hierarchical, kmeans"], [hier_accuracies,kmeans_accuracies]):
+                zip(["hierarchical","kmeans"], [hier_accuracies,kmeans_accuracies]):
 
                 plt.title("{} {} {}".format(graph_type,p,q))
                 plt.plot(edge_percents, accuracy)

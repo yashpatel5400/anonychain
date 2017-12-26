@@ -9,7 +9,7 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, SpectralClustering
 from scipy.sparse.linalg import svds
 
 def _partition_graph(G, partition_eigenvector):
@@ -44,6 +44,19 @@ def _plot_eigenvector(eigenvector, fn):
     plt.close()
 
 def spectral_analysis(G, k=None, normalize=True):
+    mat = nx.normalized_laplacian_matrix(G).todense()
+    threshold_for_bug = 0.00000001 # could be any value, ex numpy.min
+    mat[mat < threshold_for_bug] = threshold_for_bug
+    
+    sc = SpectralClustering(k, n_init=100)
+    sc.fit(mat)
+    
+    partitions = [set() for _ in range(k)]
+    for i, guess in enumerate(sc.labels_):
+        partitions[guess].add(i)
+    return partitions
+
+def spectral_analysis_manual(G, k=None, normalize=True):
     EIGEN_GAP = 0.1
     
     if normalize:
