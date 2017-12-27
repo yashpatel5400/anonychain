@@ -13,6 +13,12 @@ from sklearn.cluster import KMeans, SpectralClustering
 from scipy.sparse.linalg import svds
 
 def _partition_graph(G, partition_eigenvector):
+     """Given a graph G and the eigenvector to be used for partitioning, separates
+     the nodes into three separate sets, with the first as those whose components
+     are strictly positive, second equal to 0, and third strictly negative
+
+    Returns Partitions (list of NetworkX Subgraphs)
+    """
     partition1, partition2, partition3 = set(), set(), set()
     for i in range(len(partition_eigenvector)):
         cur_node = list(G.nodes())[i]
@@ -27,23 +33,38 @@ def _partition_graph(G, partition_eigenvector):
         partitions if len(partition) != 0]
     return [G.subgraph(partition) for partition in nonempty_partitions]
 
-def _plot_eigenvalues(s, fn):
+def _plot_eigenvalues(eigenvalues, fn):
+    """Given a list of eigenvalues and filename, plots the eigenvalues 
+    and saves at filename
+
+    Returns void
+    """
     MARGIN_PROP = 0.75
-    margin = MARGIN_PROP * np.std(s)
+    margin = MARGIN_PROP * np.std(eigenvalues)
     e = [margin] * len(s)
 
-    plt.errorbar(list(range(len(s))), s, yerr=e, fmt='o')
+    plt.errorbar(list(range(len(eigenvalues))), eigenvalues, yerr=e, fmt='o')
     plt.axhline(0.1)
     plt.savefig("output/{}".format(fn))
     plt.close()
 
 def _plot_eigenvector(eigenvector, fn):
+    """Given an eigenvector and filename, plots the eigenvector and saves at filename
+
+    Returns void
+    """
     plt.scatter(list(range(len(eigenvector))), 
         sorted(eigenvector))
     plt.savefig("output/{}".format(fn))
     plt.close()
 
 def spectral_analysis_alt(G, k=None, normalize=True):
+    """Given an input graph (G), number of clusters (k), and whether the graph
+    Laplacian is to be normalized (True) or not (False) runs spectral clustering
+    as implemented in scikit-learn (empirically found to be less effective)
+
+    Returns Partitions (list of sets of ints)
+    """
     mat = nx.normalized_laplacian_matrix(G).todense()
     threshold_for_bug = 0.00000001 # could be any value, ex numpy.min
     mat[mat < threshold_for_bug] = threshold_for_bug
@@ -57,6 +78,13 @@ def spectral_analysis_alt(G, k=None, normalize=True):
     return partitions
 
 def spectral_analysis(G, k=None, normalize=True):
+    """Given an input graph (G), number of clusters (k), and whether the graph
+    Laplacian is to be normalized (True) or not (False) runs spectral clustering
+    on the graph Laplacian using hierarchial method. Clusters are returned as a list of sets,
+    where the contents of the first set are the nodes that belong to "cluster 1"
+
+    Returns Partitions (list of sets of ints)
+    """
     EIGEN_GAP = 0.1
     
     if normalize:
@@ -134,6 +162,12 @@ def spectral_analysis(G, k=None, normalize=True):
     return partitions
 
 def kmeans_analysis(G, k):
+    """Given an input graph (G) and number of clusters (k), runs spectral clustering
+    on the graph Laplacian using k-means. Clusters are returned as a list of sets,
+    where the contents of the first set are the nodes that belong to "cluster 1"
+
+    Returns Partitions (list of sets of ints)
+    """
     print("Partitioning w/ k-means on {} clusters".format(k))
     
     L = nx.laplacian_matrix(G).asfptype()
@@ -148,5 +182,4 @@ def kmeans_analysis(G, k):
 
     # subgraphs = [G.subgraph(partition) for partition in partitions]
     print("Completed k-means partitioning")
-    # return subgraphs
     return partitions

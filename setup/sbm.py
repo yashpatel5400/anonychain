@@ -12,6 +12,12 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 def create_clusters(cluster_sizes):
+    """Given list of cluster sizes (list of ints), produces a list of clusters, where
+    the cluster at index i has size of the ith size in the list. Clusters are sets
+    of integers, with these integers representing nodes
+
+    Returns clusters (List of sets of integers)
+    """
     completed_nodes = 0
     clusters = []
     for cluster_size in cluster_sizes:
@@ -20,9 +26,12 @@ def create_clusters(cluster_sizes):
     return clusters
 
 def create_sbm(clusters, p, q, is_weighted):
-    """
-    creates a stochastic block model, with probability p within the same
-    cluster and probability q outside, with n vertices
+    """Given list of clusters (sets of integers, with these integers representing nodes), 
+    the in-cluster connection probability p, the non-cluster connection probability q, and
+    whether or not the graph is weighted, produces a random SBM (stochastic block model) graph.
+    Prints the empirical values of p,q obtained from the specifications
+
+    Returns Stochastic Block Model graph (NetworkX Graph)
     """
     print("Constructing SBM graph...")
     G = nx.Graph()
