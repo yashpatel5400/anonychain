@@ -15,22 +15,21 @@ def sparsify(G, epsilon=.5):
     # algorithm documented in https://www.cs.ubc.ca/~nickhar/Cargese3.pdf
     n = nx.number_of_nodes(G)
     L = nx.laplacian_matrix(G).todense()
-    L_inv = np.linalg.inv(L)
+    L_pinv = np.linalg.pinv(L)
 
-    basis_vectors = np.eye(n)
+    expected_nonzero = int(6 * n * np.log(n) / (epsilon ** 2))
+    print("Expected removals: {}".format(nx.number_of_edges(G) - expected_nonzero))
+
     rho = int(6 * np.log(n) / (epsilon ** 2))
-
     to_remove = []
     for e in G.edges():
         u,v = e
-        chi_e = basis_vectors[u] - basis_vectors[v]
-        p_e = np.matmul(np.matmul(np.transpose(chi_e), L_inv), chi_e)
+        p_e = L_pinv[u,u] + L_pinv[v,v] - 2 * L_pinv[u,v]
         w_e = 0
 
         for i in range(rho):
             Z_i = int(random.random() < p_e)
             w_e += Z_i / (rho * p_e)
-        print(w_e)
         if w_e == 0:
             to_remove.append(e)
 
@@ -47,11 +46,9 @@ def plot(G, fn):
     plt.close()
 
 def main():
-    # G = nx.gnp_random_graph(25, 0.75)
-    # G = nx.krackhardt_kite_graph()
-    G = nx.binomial_graph(25, .25)
+    G = nx.binomial_graph(250, .25)
     plot(G, "original")
-    sparsify(G, epsilon=.05)
+    sparsify(G, epsilon=.5)
     plot(G, "sparse")
 
 if __name__ == "__main__":

@@ -40,15 +40,12 @@ def create_multi_graph(fn):
     for chunk in _read_in_chunks(f):
         # raw format: address1ID (4 bytes) address2ID (4 bytes) Heuristics(1 byte)
         for sequence_start in range(0, len(chunk), 9):
-            address1ID = chunk[sequence_start:(sequence_start+4)] 
-            address2ID = chunk[(sequence_start+4):(sequence_start+8)]
-            heuristic  = chunk[sequence_start+8]
-            if address1ID not in nodes:
-                G.add_node(address1ID)
-                nodes.add(address1ID)
-            if address1ID not in nodes:
-                G.add_node(address2ID)
-                nodes.add(address2ID)
+            sequence = chunk[sequence_start:sequence_start+9]
+            address1ID, address2ID, heuristic = struct.unpack('iib', sequence)
+            for addressID in [address1ID, address2ID]:
+                if addressID not in nodes:
+                    G.add_node(addressID)
+                    nodes.add(addressID)
             G.add_edge(address1ID, address2ID, heuristic=heuristic)
     return G
 
@@ -58,11 +55,10 @@ def create_simple_graph(fn):
     f = open(fn, "rb")
 
     for chunk in _read_in_chunks(f):
-        # raw format: address1ID (4 bytes) address2ID (4 bytes) Heuristics(1 byte)
         for sequence_start in range(0, len(chunk), 9):
-            address1ID = chunk[sequence_start:(sequence_start+4)] 
-            address2ID = chunk[(sequence_start+4):(sequence_start+8)]
-            heuristic  = chunk[sequence_start+8]
+            # raw format: address1ID (4 bytes) address2ID (4 bytes) Heuristics(1 byte)
+            sequence = chunk[sequence_start:sequence_start+9]
+            address1ID, address2ID, heuristic = struct.unpack('iib', sequence)
             if G.has_edge(address1ID, address2ID):
                 G.add_edge(address1ID, address2ID, 
                     weight=G[address1ID][address2ID][0]["weight"] + 1)
