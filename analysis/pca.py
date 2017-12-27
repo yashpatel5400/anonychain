@@ -16,7 +16,13 @@ from plotly.graph_objs import Scatter, Scatter3d, Layout
 
 from analysis.constants import colors
 
-def _plot_clusters_2d(colors, A, plot_lib):
+def _plot_2d_pca(colors, A, plot_lib):
+    """Given list of possible colors, the matrix representation of a graph (i.e.
+    the adjacency matrix), and a plotting library (either 'matplotlib' or 'plotly'),
+    plots PCA on 2 dimensions
+
+    Returns void
+    """
     pca = PCA(n_components=2)
     pca_A = pca.fit_transform(A)
 
@@ -38,9 +44,15 @@ def _plot_clusters_2d(colors, A, plot_lib):
                 marker = dict(color=colors)
             )],
             "layout": Layout(title="PCA 2D Projection")
-        },  filename="output/pca_2d.html")
+        },  filename="output/pca/2d.html")
 
-def _plot_clusters_3d(colors, A, plot_lib):
+def _plot_3d_pca(colors, A, plot_lib):
+    """Given list of possible colors, the matrix representation of a graph (i.e.
+    the adjacency matrix), and a plotting library (either 'matplotlib' or 'plotly'),
+    plots PCA on 3 dimensions
+
+    Returns void
+    """
     pca = PCA(n_components=3)
     pca_A = pca.fit_transform(A)
 
@@ -66,13 +78,19 @@ def _plot_clusters_3d(colors, A, plot_lib):
                 marker = dict(color=colors)
             )],
             "layout": Layout(title="PCA 3D Projection")
-        },  filename="output/pca_3d.html")
+        },  filename="output/pca/3d.html")
 
 def plot_pca(G, clusters, plot_2d=True, plot_3d=True, plot_lib="plotly"):
+    """Given a graph G, the node clusters, whether a 2D PCA plot is desired, whether
+    a 3D PCA plot is desired, and a plotting library (either 'matplotlib' or 'plotly'),
+    plots the corressponding PCAs and saves in the output/pca/ folder 
+
+    Returns void
+    """
     A = nx.to_numpy_matrix(G)
     scatter_colors = [colors[i] for i in range(len(clusters)) for _ in clusters[i]]
 
     if plot_2d:
-        _plot_clusters_2d(scatter_colors, A, plot_lib=plot_lib)
+        _plot_2d_pca(scatter_colors, A, plot_lib=plot_lib)
     if plot_3d:
-        _plot_clusters_3d(scatter_colors, A, plot_lib=plot_lib)
+        _plot_3d_pca(scatter_colors, A, plot_lib=plot_lib)

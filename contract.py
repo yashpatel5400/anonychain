@@ -23,7 +23,8 @@ def _contract_edges(G, num_edges):
     that the two endpoints are now "identified" with one another. This mapping is returned
     as a dictionary If more edges are provided than can be contracted, an error is thrown. 
 
-    Returns (1) contracted graph; (2) identified nodes dictionary
+    Returns (1) contracted graph (NetworkX Graph); 
+    (2) identified nodes dictionary (NetworkX node -> NetworkX node)
     """
     identified_nodes = {}
     for _ in range(num_edges):
@@ -39,7 +40,7 @@ def _reconstruct_contracted(identified_nodes, partitions):
     partitions formed on the contracted graph, creates partitions on the original graph
     by associating the contracted nodes with the partitions of their "partners"
 
-    Returns partitions of the original graph
+    Returns partitions of the original graph (list of lists of ints)
     """
     for contracted in identified_nodes:
         for partition in partitions:
@@ -65,7 +66,8 @@ def contract_deanonymize(G, k, to_contract, to_plot=False):
     whether the output is to be plotted or not, runs clustering on the graph and produces
     output in the output/contraction/ folder
 
-    Returns (1) hierarchical partitions; (2) kmeans partitions
+    Returns (1) hierarchical partitions (list of lists of ints); 
+    (2) kmeans partitions (list of lists of ints)
     """
     contracted_G, identified_nodes = _contract_edges(G, num_edges=to_contract)
 
@@ -93,7 +95,7 @@ def single_contract_test(params):
     to be contracted), runs a with-contraction clustering trial on a randomly
     generated SBM (Stochastic Block Model) graph
 
-    Returns (1) hierarchical accuracy; (2) kmeans accuracy
+    Returns (1) hierarchical accuracy (float); (2) kmeans accuracy (float)
     """
     cluster_size = 8
     num_clusters = 5

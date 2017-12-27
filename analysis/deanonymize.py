@@ -13,6 +13,15 @@ from analysis.constants import colors
 from analysis.spectral import spectral_analysis, kmeans_analysis
 
 def _reorder_clusters(clusters, partitions):
+    """Given the ground truth clusters and partitions (list of sets, where the 
+    contents of the first set are the nodes that belong to "cluster 1"), reorders the
+    partitions to align with the ground truth clusters. This is to avoid the problem
+    that calling a cluster "cluster 1" vs. calling it "cluster 2" is completely arbitrary,
+    and so this shuffles the numbers to achieve the highest accuracy possible. Note that
+    this should only be called in test settings (i.e. not for the final Bitcoin trials)
+
+    Returns Partitions (list of sets of ints)
+    """
     reordered_partitions = [None for _ in clusters]
     used_partitions = set()
     for i, cluster in enumerate(clusters):
@@ -24,6 +33,12 @@ def _reorder_clusters(clusters, partitions):
     return reordered_partitions
 
 def draw_partitions(G, pos, partitions, fn, weigh_edges=False):
+    """Given a graph (G), the node positions (pos), the partitions on the nodes, the destination
+    filename, and whether or not the edges are weighted, plots a figure and saves it
+    to the destination location (in the output/ folder)
+
+    Returns void
+    """
     print("Plotting graph partitions...")
     nodes = list(G.nodes)
     if partitions is None:
@@ -44,6 +59,11 @@ def draw_partitions(G, pos, partitions, fn, weigh_edges=False):
     plt.close()
 
 def calc_accuracy(truth, guess):
+    """Given the ground truth and guessed partitions (both list of sets of ints), finds
+    the accuracy of the clustering algorithm. Returns as a percent, i.e. between 0 and 100
+
+    Returns Accuracy (float in [0.0,100.0])
+    """
     if len(truth) == len(guess):
         guess = _reorder_clusters(truth, guess)
 
@@ -56,6 +76,12 @@ def calc_accuracy(truth, guess):
     return 0.0
 
 def deanonymize(G, k):
+    """Given the input graph G and number of clusters k, runs hierarchical and k-means clustering
+    to produce partitions. Returns these partitions as lists of sets of ints
+
+    Returns (1) Partitions from hierarchical clustering
+    (2) Partitions from k-means clustering
+    """
     print("Running partitioning analyses on graph...")
     hier_partitions = spectral_analysis(G, k=k)
     kmeans_partitions = kmeans_analysis(G, k=k)
