@@ -18,13 +18,16 @@ There are two main modes of running the code: one for running a single SBM test 
 
 The SBM model generates a toy example based on parameters specified, which we then do spectral clustering on. The parameters to use are:
 
-- (-c)    : (int) size of each cluster (if you want a bunch of clusters of the same size, otherwise use the --cs option described below)
-- (-n)    : (int) number of clusters (MUST be used in conjunction with -c, to specify the size of each of the clusters)
-- (-g)    : (y/n) a boolean that indicates whether the number of clusters should be guess or taken as known
-- (-p)    : [0,1] in-cluster probability
-- (-q)    : [0,1] non-cluster probability
-- (--cs)  : (int list) size of each cluster (comma delimited)
-- (--lib) : ('matplotlib','plotly') for specifying which plotting library to use
+- (-r) : <run_test_bool>   (y/n) for whether to create SBM to run test or run on actual data
+- (-d) : <display_bool>    (y/n) for whether to show PCA projections
+- (-w) : <weighted_graph>  (y/n) for whether to have weights on edges (randomized)
+- (-c) : <cluster_size>    (int) size of each cluster (assumed to be same for all)
+- (-n) : <num_cluster>     (int) number of clusters (distinct people)
+- (-g) : <guess_bool>      (y/n) to guess the number of clusters vs. take it as known
+- (-p) : <p_value>         (0,1) for in-cluster probability
+- (-q) : <q_value>         (0,1) for non-cluster probability
+- (--cs) : <cluster_sizes> (int list) size of each cluster (comma delimited)
+- (--lib) :                ('matplotlib','plotly') for plotting library
 
 So, for example, the script would be executed with:
 

@@ -15,6 +15,11 @@ from setup.sbm import create_sbm, create_clusters
 from analysis.deanonymize import calc_accuracy, deanonymize
 
 def conduct_tests(ps, qs, css):
+    """Given lists of p probabilities, q probabilities, and lists of cluster sizes,
+    runs tests on clustering accuracies (both hierarchical and k-means)
+
+    Returns void
+    """
     trials = 5
     
     for cs in css:
