@@ -77,27 +77,27 @@ def create_visual_json(fn):
     data["links"] = []
     nodes_to_ind = {}
 
-    with open("visualize/nodes.txt", 'w') as nodes_f:
-        with open("visualize/edges.txt", 'w') as edges_f:
-            for chunk in _read_in_chunks(f):
-                # raw format: address1ID (4 bytes) address2ID (4 bytes) Heuristics(1 byte)
-                for sequence_start in range(0, len(chunk), 9):
-                    sequence = chunk[sequence_start:sequence_start+9]
-                    address1ID, address2ID, heuristic = struct.unpack('iib', sequence)
+    print("Parsing input binary dump...")
+    for chunk in _read_in_chunks(f):
+        # raw format: address1ID (4 bytes) address2ID (4 bytes) Heuristics(1 byte)
+        for sequence_start in range(0, len(chunk), 9):
+            sequence = chunk[sequence_start:sequence_start+9]
+            address1ID, address2ID, heuristic = struct.unpack('iib', sequence)
+            
+            for addressID in [address1ID, address2ID]:
+                if addressID not in nodes_to_ind:
+                    nodes_to_ind[addressID] = len(data["nodes"])
+                    data["nodes"].append({"id" : addressID})
                     
-                    for addressID in [address1ID, address2ID]:
-                        if addressID not in nodes_to_ind:
-                            nodes_to_ind[addressID] = len(data["nodes"])
-                            data["nodes"].append({"name" : addressID})
-                            
-                    data["links"].append({
-                        "source": nodes_to_ind[address1ID],
-                        "target": nodes_to_ind[address2ID],
-                        "weight": heuristic
-                    })
+            data["links"].append({
+                "source": nodes_to_ind[address1ID],
+                "target": nodes_to_ind[address2ID],
+                "weight": heuristic
+            })
 
-    with open("visualize/graphFile.json", "w") as dest:
+    with open("visualize/graph.json", "w") as dest:
         json.dump(data, dest)
+    print("Produced visualization JSON!")
                     
 if __name__ == "__main__":
     G = create_visual_json("blockchain/mini.dat")
