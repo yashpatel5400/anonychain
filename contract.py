@@ -1,7 +1,8 @@
 """
 __author__ = Yash Patel
 __name__   = contract.py
-__description__ = Main contractions script
+__description__ = Contraction script used for testing the effectiveness of 
+uniformly at random edge contractions in retaining clustering accuracy
 """
 
 import numpy as np
@@ -17,6 +18,13 @@ from analysis.deanonymize import draw_partitions, calc_accuracy, deanonymize
 from blockchain.read import create_simple_graph
 
 def _contract_edges(G, num_edges):
+    """Given a graph G and a desired number of edges to be contracted, contracts edges
+    uniformly at random (non-mutating of the original graph). Edges are contracted such
+    that the two endpoints are now "identified" with one another. This mapping is returned
+    as a dictionary If more edges are provided than can be contracted, an error is thrown. 
+
+    Returns (1) contracted graph; (2) identified nodes dictionary
+    """
     identified_nodes = {}
     for _ in range(num_edges):
         edges = list(G.edges)
@@ -27,6 +35,12 @@ def _contract_edges(G, num_edges):
     return G, identified_nodes
 
 def _reconstruct_contracted(identified_nodes, partitions):
+    """Given the node identifications from the original graph contraction and the 
+    partitions formed on the contracted graph, creates partitions on the original graph
+    by associating the contracted nodes with the partitions of their "partners"
+
+    Returns partitions of the original graph
+    """
     for contracted in identified_nodes:
         for partition in partitions:
             if identified_nodes[contracted] in partition:
@@ -34,23 +48,25 @@ def _reconstruct_contracted(identified_nodes, partitions):
                 break
     return partitions
 
-def plot_graphs(G, contracted_G):
-    print("Plotting contracted graph...")
-    contracted_pos = nx.spring_layout(contracted_G)
-    nx.draw(contracted_G, contracted_pos)
+def plot_graph(G, G_type):
+    """Given the original graph G and contracted graph, plots both in the output/contraction/
+    folder, named respectively. 
+
+    Returns void
+    """
+    pos = nx.spring_layout(G)
+    nx.draw(G, contracted_pos)
     plt.axis('off')
-    plt.savefig("output/contraction/graph.png")
+    plt.savefig("output/contraction/{}.png".format(G_type))
     plt.close()
 
-    spring_pos = nx.spring_layout(G)
-    draw_partitions(G, spring_pos, clusters, 
-        "contraction/truth.png", weigh_edges=False)
-    draw_partitions(G, spring_pos, hier_partitions, 
-        "contraction/eigen_guess.png", weigh_edges=False)
-    draw_partitions(G, spring_pos, kmeans_partitions, 
-        "contraction/kmeans_guess.png", weigh_edges=False)
-
 def contract_deanonymize(G, k, to_contract, to_plot=False):
+    """Given graph G, the number of clusters k, the number of edges to be contracted, and
+    whether the output is to be plotted or not, runs clustering on the graph and produces
+    output in the output/contraction/ folder
+
+    Returns (1) hierarchical partitions; (2) kmeans partitions
+    """
     contracted_G, identified_nodes = _contract_edges(G, num_edges=to_contract)
 
     hier_partitions, kmeans_partitions = deanonymize(contracted_G, k=k)
@@ -58,10 +74,27 @@ def contract_deanonymize(G, k, to_contract, to_plot=False):
     kmeans_partitions = _reconstruct_contracted(identified_nodes, kmeans_partitions)
 
     if to_plot:
-        plot_graphs(G, contracted_G)
+        print("Plotting graphs...")
+        plot_graph(G, "original")
+        plot_graph(contracted_G, "contracted")
+
+        spring_pos = nx.spring_layout(G)
+        draw_partitions(G, spring_pos, clusters, 
+            "contraction/truth.png", weigh_edges=False)
+        draw_partitions(G, spring_pos, hier_partitions, 
+            "contraction/eigen_guess.png", weigh_edges=False)
+        draw_partitions(G, spring_pos, kmeans_partitions, 
+            "contraction/kmeans_guess.png", weigh_edges=False)
     return hier_partitions, kmeans_partitions
 
 def single_contract_test(params):
+    """Given graph parameters with p (probability in-cluster), 
+    q (probability out-of-cluster), and percent_edges (percent of total edges
+    to be contracted), runs a with-contraction clustering trial on a randomly
+    generated SBM (Stochastic Block Model) graph
+
+    Returns (1) hierarchical accuracy; (2) kmeans accuracy
+    """
     cluster_size = 8
     num_clusters = 5
     cluster_sizes = [cluster_size] * num_clusters
@@ -82,6 +115,11 @@ def single_contract_test(params):
     return hier_accuracy, kmeans_accuracy
 
 def contract_tests():
+    """Runs tests for all values of p between [0,1) (.1 increments), q between
+    [0,p) (.1 increments), and percent_edges [0,.3) (.03 increments)
+
+    Returns void
+    """
     edge_percents = np.arange(0, .30, 0.03)
     num_trials    = 10
 

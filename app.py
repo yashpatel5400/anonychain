@@ -18,6 +18,11 @@ from analysis.deanonymize import draw_partitions, calc_accuracy, deanonymize
 from blockchain.read import create_simple_graph
 
 def _cmd_graph(argv):
+    """Parses arguments as specified by argv and returns as a dictionary. Entries
+    are parsed as specified in the help menu (visible by running "python3 app.py -h")
+
+    Returns parameters dictionary
+    """
     params = {
         "run_test"        : True,
         "pca"             : True,
@@ -74,6 +79,13 @@ def _cmd_graph(argv):
     return params
 
 def main(argv):
+    """Main application method that parses command line arguments and runs hierarchical
+    and kmeans clustering. CMD-line arguments are specified in the help menu (run with -h).
+    Final clustering outputs are provided in the output/ folder as eigen_guess and 
+    kmeans_guess respectively. Intermediate results are available in output/eigen/
+
+    Returns void
+    """
     params = _cmd_graph(argv)
 
     if params["run_test"]:
