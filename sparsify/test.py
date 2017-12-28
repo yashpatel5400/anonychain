@@ -54,7 +54,19 @@ def _run_test(G, clusters, sparsifier, sname):
     delta_kmeans = new_kmeans_accuracy - orig_kmeans_accuracy
     return delta_hier, delta_kmeans
 
-def spectral_trial():
+def _plot_trial_results(params,hier_deltas,kmeans_deltas,trial_type):
+    params = np.array(params)
+    for acc_type, deltas in zip(["hierarchical","kmeans"],[hier_deltas,kmeans_deltas]):   
+        plt.title("Param vs. Drop in {} Accuracy".format(acc_type))
+        
+        m, b = np.polyfit(params, deltas, 1)
+        plt.scatter(params, deltas)
+        plt.plot(params, m * params + b, '-')
+
+        plt.savefig("output/sparsify/{}_{}.png".format(acc_type,trial_type))
+        plt.close()
+
+def spectral_trial(params):
     epsilons = np.arange(0.25,5.0,.125)
 
     filtered_epsilons = []
@@ -76,26 +88,35 @@ def spectral_trial():
             
         except:
             continue
-
-    for acc_type, deltas in zip(["hierarchical","kmeans"],[hier_deltas,kmeans_deltas]):   
-        plt.title("Epsilon vs. Drop in {} Accuracy".format(acc_type))
-        plt.scatter(filtered_epsilons, deltas)
-        plt.savefig("output/sparsify/{}_delta.png".format(acc_type))
-        plt.close()
+    _plot_trial_results(filtered_epsilons,hier_deltas,kmeans_deltas,"spectral")
 
 def sample_trial(params):
-    cluster_sizes = [params["cluster_size"]] * params["num_clusters"]
-    clusters = create_clusters(cluster_sizes)
+    Cs = np.arange(0.25,5.0,.25)
+
+    filtered_Cs   = []
+    hier_deltas   = []
+    kmeans_deltas = []
     
-    G = create_sbm(clusters, params["p"], params["q"], False)
-    L = nx.normalized_laplacian_matrix(G).todense()
-    w,_ = np.linalg.eig(L)
-    sorted_w = sorted(w)
-    
-    sample_sparsifier = SampleSparsifier(sorted_w[len(clusters)], C=1)
-    delta_hier, delta_kmeans = _run_test(G, clusters, sample_sparsifier, "sample")
-    print("Sample-sparsifier accuracies: {} (hierarchical), " \
-        "{} (kmeans)".format(delta_hier, delta_kmeans))
+    for C in Cs:
+        try:
+            cluster_sizes = [params["cluster_size"]] * params["num_clusters"]
+            clusters = create_clusters(cluster_sizes)
+            
+            G = create_sbm(clusters, params["p"], params["q"], False)
+            L = nx.normalized_laplacian_matrix(G).todense()
+            w,_ = np.linalg.eig(L)
+            sorted_w = sorted(w)
+            
+            sample_sparsifier = SampleSparsifier(sorted_w[len(clusters)], C=C)
+            delta_hier, delta_kmeans = _run_test(G, clusters, sample_sparsifier, "sample")
+            
+            filtered_Cs.append(C)
+            hier_deltas.append(delta_hier)
+            kmeans_deltas.append(delta_kmeans)
+
+        except:
+            continue
+    _plot_trial_results(filtered_Cs,hier_deltas,kmeans_deltas,"sample")
 
 def main():
     params = {
@@ -105,7 +126,7 @@ def main():
         "num_clusters" : 10
     }
     
-    # spectral_trial(params)
+    spectral_trial(params)
     sample_trial(params)
 
 if __name__ == "__main__":

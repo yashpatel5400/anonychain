@@ -29,7 +29,6 @@ class SampleSparsifier:
             else: weight = 1
             
             p_e = weight * self.tau * logn / G.degree(u)
-            print(p_e)
             if random.random() > p_e:
                 to_remove.append(e) 
 
