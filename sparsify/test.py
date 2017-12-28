@@ -33,18 +33,18 @@ def _partition_graph(G, clusters):
     kmeans_accuracy = calc_accuracy(clusters, kmeans_partitions)
     return hier_accuracy, kmeans_accuracy
 
-def _run_test(G, clusters, sparsifier, sname):
+def _run_test(G, clusters, sparsifier, param, sname):
     """Given an input graph, a sparsifier object (API of having a .sparsify(G) function),
     and a name of the sparsifier, plots the original and sparsifier versions of the graph
     in the output/sparsify/ folder
 
     Returns void
     """
-    _plot(G, "{}_original".format(sname))
+    _plot(G, "{}_{}_original.png".format(sname, param))
     orig_hier_accuracy, orig_kmeans_accuracy = _partition_graph(G, clusters)
     sparsifier.sparsify(G)
     new_hier_accuracy, new_kmeans_accuracy = _partition_graph(G, clusters)
-    _plot(G, "{}_sparse".format(sname))
+    _plot(G, "{}_{}_sparse.png".format(sname, param))
     
     print("Hierarchical -- Original: {} <=> New: {}".format(
         orig_hier_accuracy, new_hier_accuracy))
@@ -54,7 +54,7 @@ def _run_test(G, clusters, sparsifier, sname):
     delta_kmeans = new_kmeans_accuracy - orig_kmeans_accuracy
     return delta_hier, delta_kmeans
 
-def _plot_trial_results(params,hier_deltas,kmeans_deltas,trial_type):
+def _plot_trial_results(params, hier_deltas, kmeans_deltas, trial_type):
     params = np.array(params)
     for acc_type, deltas in zip(["hierarchical","kmeans"],[hier_deltas,kmeans_deltas]):   
         plt.title("Param vs. Drop in {} Accuracy".format(acc_type))
@@ -80,7 +80,8 @@ def spectral_trial(params):
             G = create_sbm(clusters, params["p"], params["q"], False)
             
             spectral_sparsifier = SpectralSparsifier(epsilon=epsilon)
-            delta_hier, delta_kmeans = _run_test(G, clusters, spectral_sparsifier, "spectral")
+            delta_hier, delta_kmeans = _run_test(G, clusters, 
+                spectral_sparsifier, epsilon, "spectral")
             
             filtered_epsilons.append(epsilon)
             hier_deltas.append(delta_hier)
@@ -91,7 +92,7 @@ def spectral_trial(params):
     _plot_trial_results(filtered_epsilons,hier_deltas,kmeans_deltas,"spectral")
 
 def sample_trial(params):
-    Cs = np.arange(0.25,5.0,.25)
+    Cs = np.arange(0.25,10.0,.25)
 
     filtered_Cs   = []
     hier_deltas   = []
@@ -108,7 +109,8 @@ def sample_trial(params):
             sorted_w = sorted(w)
             
             sample_sparsifier = SampleSparsifier(sorted_w[len(clusters)], C=C)
-            delta_hier, delta_kmeans = _run_test(G, clusters, sample_sparsifier, "sample")
+            delta_hier, delta_kmeans = _run_test(G, clusters, 
+                sample_sparsifier, C, "sample")
             
             filtered_Cs.append(C)
             hier_deltas.append(delta_hier)
