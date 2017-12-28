@@ -16,6 +16,11 @@ import matplotlib.pyplot as plt
 import json
 
 def _read_in_chunks(file_object, chunk_size=9000):
+    """Given a file pointer and a chunk size, yields an iterator over the file
+    contents to avoid having to read it all into memory
+
+    Returns void
+    """
     i=0
     while True:
         data = file_object.read(chunk_size)
@@ -28,10 +33,22 @@ def _read_in_chunks(file_object, chunk_size=9000):
         yield data
 
 def plot_multi_graph(G):
+    """Given a multigraph G, produces a corresponding visualization
+
+    Returns void
+    """
     write_dot(G,'blockchain/multi_blockchain.dot')
     subprocess.call("./convert.sh", shell=True)
 
 def create_multi_graph(fn):
+    """Given an input filename, constructs an unweighted multigraph with edges labelled
+    with an additional "heuristic" property. The input data MUST be specified as 
+    follows (no separators):
+
+    address1ID (4 bytes) address2ID (4 bytes) Heuristics(1 byte)
+
+    Returns Multigraph (NetworkX object)
+    """
     print("Reading blockchain graph as multi graph...")
     G = nx.MultiGraph()
     f = open(fn, "rb")
@@ -50,6 +67,13 @@ def create_multi_graph(fn):
     return G
 
 def create_simple_graph(fn):
+    """Given an input filename, constructs a weighted, undirected graph. 
+    The input data MUST be specified as follows (no separators):
+
+    address1ID (4 bytes) address2ID (4 bytes) Heuristics(1 byte)
+
+    Returns Simple, weighted graph (NetworkX object)
+    """
     print("Reading blockchain graph as simple graph...")
     G = nx.MultiGraph()
     f = open(fn, "rb")
@@ -67,6 +91,16 @@ def create_simple_graph(fn):
     return G
 
 def create_visual_json(fn):
+    """Given an input filename, reads the file and outputs the corresponding JSON formatted
+    data to be visualized on the HTML visualization page. The input data MUST be specified
+    as follows (no separators):
+
+    address1ID (4 bytes) address2ID (4 bytes) Heuristics(1 byte)
+
+    Output JSON file is dumped as visualize/graph.json to be viewed through visualize/index.html
+
+    Returns void
+    """
     f = open(fn, "rb")
     data  = {}
     data["nodes"] = []
