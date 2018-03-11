@@ -15,6 +15,7 @@ import subprocess
 from setup.sbm import create_sbm, create_clusters
 from analysis.pca import plot_pca
 from analysis.deanonymize import draw_partitions, calc_accuracy, deanonymize
+from analysis.streaming import create_stream, streaming_analysis
 from blockchain.read import create_simple_graph
 
 def _cmd_graph(argv):
@@ -78,6 +79,13 @@ def _cmd_graph(argv):
         params["clusters"] = create_clusters(params["cluster_sizes"])
     return params
 
+def streaming(argv):
+    params = _cmd_graph(argv)
+    clusters = params["clusters"]
+    G = create_sbm(clusters, params["p"], params["q"], params["weighted"])
+    G_stream = create_stream(G)
+    print([entry for entry in G_stream])
+
 def main(argv):
     """Main application method that parses command line arguments and runs hierarchical
     and kmeans clustering. CMD-line arguments are specified in the help menu (run with -h).
@@ -122,4 +130,5 @@ def main(argv):
 if __name__ == "__main__":
     print("Cleaning up directories...")
     subprocess.call("./clean.sh", shell=True)
-    main(sys.argv[1:])
+    streaming(sys.argv[1:])
+    # main(sys.argv[1:])
