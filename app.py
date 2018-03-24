@@ -18,7 +18,7 @@ from analysis.pca import plot_pca
 from analysis.spectral import kmean_spectral, spectral_analysis_alt, cluster_analysis
 from analysis.deanonymize import draw_partitions, calc_accuracy, deanonymize
 from analysis.streaming import create_stream, streaming_analysis
-from blockchain.read import create_simple_graph, create_similarity
+from blockchain.read import create_simple_graph, create_similarity, count_nodes
 from algorithms import get_algorithms
 
 def _cmd_graph(argv):
@@ -28,27 +28,29 @@ def _cmd_graph(argv):
     Returns parameters dictionary
     """
     params = {
-        "run_test"        : True,
+        "byte_percent"    : 1.0,
+        "cluster_size"    : 10,
         "pca"             : True,
+        "guess_clusters"  : False,
+        "num_clusters"    : 2,
+        "run_test"        : True,
+        "weighted"        : True,
         "p"               : 0.75,
         "q"               : 0.25,
-        "guess_clusters"  : False,
-        "weighted"        : True,
-        "cluster_size"    : 10,
-        "num_clusters"    : 2,
         "cs"              : None,
         "lib"             : "matplotlib"
     }
 
     USAGE_STRING = """eigenvalues.py 
-            -r <run_test_bool>   [(y/n) for whether to create SBM to run test or run on actual data]
-            -d <display_bool>    [(y/n) for whether to show PCA projections]
-            -w <weighted_graph>  [(y/n) for whether to have weights on edges (randomized)]
+            -b <byte_percent>    [(float) percent of bytes in full data to be analyzed]
             -c <cluster_size>    [(int) size of each cluster (assumed to be same for all)]
-            -n <num_cluster>     [(int) number of clusters (distinct people)]
+            -d <display_bool>    [(y/n) for whether to show PCA projections]
             -g <guess_bool>      [(y/n) to guess the number of clusters vs. take it as known] 
+            -n <num_cluster>     [(int) number of clusters (distinct people)]
             -p <p_value>         [(0,1) for in-cluster probability]
             -q <q_value>         [(0,1) for non-cluster probability] 
+            -r <run_test_bool>   [(y/n) for whether to create SBM to run test or run on actual data]
+            -w <weighted_graph>  [(y/n) for whether to have weights on edges (randomized)]
             --cs <cluster_sizes> [(int list) size of each cluster (comma delimited)]
             --lib                [('matplotlib','plotly') for plotting library]"""
 
@@ -61,12 +63,14 @@ def _cmd_graph(argv):
         if opt in ('-h'):
             print(USAGE_STRING)
             sys.exit()
-        elif opt in ("-r"): params["run_test"] = (arg == "y")
-        elif opt in ("-d"): params["pca"] = (arg == "y")
-        elif opt in ("-w"): params["weighted"] = (arg == "y")
-        elif opt in ("-c"): params["cluster_size"] = int(arg)
-        elif opt in ("-n"): params["num_clusters"] = int(arg)
+
+        elif opt in ("-b"): params["byte_percent"]   = float(arg)
+        elif opt in ("-c"): params["cluster_size"]   = int(arg)
+        elif opt in ("-d"): params["pca"]            = (arg == "y")
         elif opt in ("-g"): params["guess_clusters"] = (arg == "y")
+        elif opt in ("-n"): params["num_clusters"]   = int(arg)
+        elif opt in ("-r"): params["run_test"]       = (arg == "y")
+        elif opt in ("-w"): params["weighted"]       = (arg == "y")
         
         elif opt in ("-p"): params["p"] = float(arg)
         elif opt in ("-q"): params["q"] = float(arg)
@@ -98,7 +102,9 @@ def main(argv):
         plot_pca(G, clusters, plot_2d=True, plot_3d=True, plot_lib=params["lib"])
     else:
         clusters = None
-        L = create_similarity("blockchain/mini.dat")
+        # change the line below if the remote source of the data is updated
+        data_src = "https://s3.amazonaws.com/bitcoinclustering/cluster_data.dat"
+        L = get_data(data_src, percent_bytes=params["byte_percent"])
 
     if params["run_test"]:
         num_clusters = len(clusters)
