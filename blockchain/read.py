@@ -111,7 +111,7 @@ def create_similarity(fn):
         for sequence_start in range(0, len(chunk), 9):
             sequence = chunk[sequence_start:sequence_start+9]
             address1ID, address2ID, heuristic = struct.unpack('iib', sequence)
-            
+
             if address1ID not in id_to_index:
                 id_to_index[address1ID] = len(id_to_index)
             if address2ID not in id_to_index:

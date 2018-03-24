@@ -8,16 +8,18 @@ import networkx as nx
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import sklearn.cluster
 
 import sys, getopt
 import subprocess
 
 from setup.sbm import create_sbm, create_clusters
 from analysis.pca import plot_pca
-from analysis.spectral import kmean_spectral, spectral_analysis_alt
+from analysis.spectral import kmean_spectral, spectral_analysis_alt, cluster_analysis
 from analysis.deanonymize import draw_partitions, calc_accuracy, deanonymize
 from analysis.streaming import create_stream, streaming_analysis
 from blockchain.read import create_simple_graph, create_similarity
+from algorithms import get_algorithms
 
 def _cmd_graph(argv):
     """Parses arguments as specified by argv and returns as a dictionary. Entries
@@ -118,13 +120,19 @@ def main(argv):
 
     else:
         num_clusters = params["num_clusters"]
+        algorithms = get_algorithms(num_clusters)
         weigh_edges = True
-        kmeans_partitions_alt = spectral_analysis_alt(L, k=num_clusters)
         
         G = nx.from_scipy_sparse_matrix(L)
-        spring_pos = nx.spring_layout(G)
-        draw_partitions(G, spring_pos, kmeans_partitions_alt, 
-            "kmeans_guess.png", weigh_edges=weigh_edges)
+        spring_pos = nx.spring_layout(G)    
+
+        for algorithm in algorithms:
+            alg_name, algorithm, args, kwds = algorithm
+            print("Running {} partitioning".format(alg_name))
+            
+            partitions = cluster_analysis(L, num_clusters, algorithm, args, kwds)
+            draw_partitions(G, spring_pos, partitions, 
+                "{}_guess.png".format(alg_name), weigh_edges=weigh_edges)
 
 if __name__ == "__main__":
     print("Cleaning up directories...")

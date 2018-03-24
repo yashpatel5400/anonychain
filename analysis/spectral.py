@@ -9,6 +9,7 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
+import seaborn as sns
 from sklearn.cluster import KMeans, SpectralClustering
 from scipy.sparse.linalg import svds
 
@@ -57,21 +58,6 @@ def _plot_eigenvector(eigenvector, fn):
         sorted(eigenvector))
     plt.savefig("output/{}".format(fn))
     plt.close()
-
-def spectral_analysis_alt(L, k=None, normalize=True):
-    """Given an input graph (G), number of clusters (k), and whether the graph
-    Laplacian is to be normalized (True) or not (False) runs spectral clustering
-    as implemented in scikit-learn (empirically found to be less effective)
-
-    Returns Partitions (list of sets of ints)
-    """
-    sc = SpectralClustering(k, n_init=10, affinity="precomputed")
-    labels = sc.fit_predict(L)
-    
-    partitions = [set() for _ in range(k)]
-    for i, guess in enumerate(labels):
-        partitions[guess].add(i)
-    return partitions
 
 def spectral_analysis(G, k=None, normalize=True):
     """Given an input graph (G), number of clusters (k), and whether the graph
@@ -183,4 +169,32 @@ def kmean_spectral(L, k):
     for i, guess in enumerate(guesses):
         partitions[guess].add(i)
     print("Completed k-means partitioning")
+    return partitions
+
+def spectral_analysis_alt(L, k=None, normalize=True):
+    """Given an input graph (G), number of clusters (k), and whether the graph
+    Laplacian is to be normalized (True) or not (False) runs spectral clustering
+    as implemented in scikit-learn (empirically found to be less effective)
+
+    Returns Partitions (list of sets of ints)
+    """
+    sc = SpectralClustering(k, n_init=10, n_jobs=-1)
+    labels = sc.fit_predict(L)
+    
+    partitions = [set() for _ in range(k)]
+    for i, guess in enumerate(labels):
+        partitions[guess].add(i)
+    return partitions
+
+def cluster_analysis(L, k, cluster_alg, args, kwds):
+    """Given an input graph (G), number of clusters (k), and whether the graph
+    Laplacian is to be normalized (True) or not (False) runs spectral clustering
+    as implemented in scikit-learn (empirically found to be less effective)
+
+    Returns Partitions (list of sets of ints)
+    """
+    labels = cluster_alg(*args, **kwds).fit_predict(L)
+    partitions = [set() for _ in range(k)]
+    for i, guess in enumerate(labels):
+        partitions[guess].add(i)
     return partitions
