@@ -194,7 +194,7 @@ def cluster_analysis(L, cluster_alg, args, kwds):
     Returns Partitions (list of sets of ints)
     """
     labels = cluster_alg(*args, **kwds).fit_predict(L)
-    num_clusters = len(np.unique(labels))
+    num_clusters = np.max(labels) + 1
     partitions = [set() for _ in range(num_clusters)]
     for i, guess in enumerate(labels):
         partitions[guess].add(i)

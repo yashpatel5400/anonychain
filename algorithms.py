@@ -8,30 +8,30 @@ deanonymization graph data
 import sklearn.cluster
 
 def get_algorithms(num_clusters):
-    return [
-        ("KMeans", sklearn.cluster.KMeans, (), {
+    return {
+        "KMeans": (sklearn.cluster.KMeans, (), {
             'n_clusters' : num_clusters,
             'n_jobs' : -1,
             'algorithm' : 'full'
         }),
         
-        ("MiniBatchKMeans", sklearn.cluster.MiniBatchKMeans, (), {
+        "MiniBatchKMeans": (sklearn.cluster.MiniBatchKMeans, (), {
             'n_clusters' : num_clusters
         }),
            
-        ("AffinityPropagation", sklearn.cluster.AffinityPropagation, (), {
-            'damping' : .5,
-            'affinity' : 'euclidean'
-        }),
-
-        ("SpectralClustering", sklearn.cluster.SpectralClustering, (), {
+        "SpectralClustering": (sklearn.cluster.SpectralClustering, (), {
             'n_clusters' : num_clusters,
             'n_jobs' : -1,
             'affinity' : 'rbf'
         }),
 
-        ("DBSCAN", sklearn.cluster.DBSCAN, (), {
+        "AffinityPropagation": (sklearn.cluster.AffinityPropagation, (), {
+            'damping' : .5,
+            'affinity' : 'euclidean'
+        }),
+
+        "DBSCAN": (sklearn.cluster.DBSCAN, (), {
             'eps' : .5,
             'n_jobs' : -1
         })
-    ]
+    }

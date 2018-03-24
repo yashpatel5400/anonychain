@@ -129,13 +129,15 @@ def main(argv):
         G = nx.from_scipy_sparse_matrix(L)
         spring_pos = nx.spring_layout(G)    
 
-        for algorithm in algorithms:
-            alg_name, algorithm, args, kwds = algorithm
-            print("Running {} partitioning...".format(alg_name))
-            
-            partitions = cluster_analysis(L, algorithm, args, kwds)
-            draw_partitions(G, spring_pos, partitions, 
-                "{}_guess.png".format(alg_name), weigh_edges=weigh_edges)
+        to_run = set(["KMeans","MiniBatchKMeans","SpectralClustering"])
+        for alg_name in algorithms:
+            if alg_name in to_run:
+                algorithm, args, kwds = algorithms[alg_name]
+                print("Running {} partitioning...".format(alg_name))
+                
+                partitions = cluster_analysis(L, algorithm, args, kwds)
+                draw_partitions(G, spring_pos, partitions, 
+                    "{}_guess.png".format(alg_name), weigh_edges=weigh_edges)
 
 if __name__ == "__main__":
     print("Cleaning up directories...")
