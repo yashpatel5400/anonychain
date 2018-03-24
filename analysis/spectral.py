@@ -58,22 +58,18 @@ def _plot_eigenvector(eigenvector, fn):
     plt.savefig("output/{}".format(fn))
     plt.close()
 
-def spectral_analysis_alt(G, k=None, normalize=True):
+def spectral_analysis_alt(L, k=None, normalize=True):
     """Given an input graph (G), number of clusters (k), and whether the graph
     Laplacian is to be normalized (True) or not (False) runs spectral clustering
     as implemented in scikit-learn (empirically found to be less effective)
 
     Returns Partitions (list of sets of ints)
     """
-    mat = nx.normalized_laplacian_matrix(G).todense()
-    threshold_for_bug = 0.00000001 # could be any value, ex numpy.min
-    mat[mat < threshold_for_bug] = threshold_for_bug
-    
-    sc = SpectralClustering(k, n_init=100)
-    sc.fit(mat)
+    sc = SpectralClustering(k, n_init=10, affinity="precomputed")
+    labels = sc.fit_predict(L)
     
     partitions = [set() for _ in range(k)]
-    for i, guess in enumerate(sc.labels_):
+    for i, guess in enumerate(labels):
         partitions[guess].add(i)
     return partitions
 
@@ -171,15 +167,20 @@ def kmeans_analysis(G, k):
     print("Partitioning w/ k-means on {} clusters".format(k))
     
     L = nx.laplacian_matrix(G).asfptype()
-    # U, _, _ = np.linalg.svd(L)
+    return kmean_spectral(L)
+
+def kmean_spectral(L, k):
+    """Given an input matrix and number of clusters k, runs spectral clustering
+    on the graph Laplacian using k-means. Clusters are returned as a list of sets,
+    where the contents of the first set are the nodes that belong to "cluster 1"
+
+    Returns Partitions (list of sets of ints)
+    """
     U, _, _ = svds(L, k=k, which='SM', return_singular_vectors="u")
 
     guesses = KMeans(n_clusters=k, n_jobs=-1).fit_predict(U)
-    
     partitions = [set() for _ in range(k)]
     for i, guess in enumerate(guesses):
         partitions[guess].add(i)
-
-    # subgraphs = [G.subgraph(partition) for partition in partitions]
     print("Completed k-means partitioning")
     return partitions

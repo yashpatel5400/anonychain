@@ -8,7 +8,9 @@ import subprocess
 import struct
 
 import networkx as nx
+import numpy as np
 from networkx.drawing.nx_agraph import write_dot
+from scipy.sparse import dok_matrix
 
 import matplotlib
 matplotlib.use('Agg')
@@ -90,6 +92,39 @@ def create_simple_graph(fn):
                 G.add_edge(address1ID, address2ID, weight=1)
     return G
 
+def create_similarity(fn):
+    """Given an input filename, constructs the similarity matrix for the associated
+    graph. NetworkX is NOT used directly for purposes of space efficiency.
+    The input data MUST be specified as follows (no separators):
+
+    address1ID (4 bytes) address2ID (4 bytes) Heuristics(1 byte)
+
+    Returns scipy-sparse matrix
+    """
+    print("Reading blockchain graph as sparse similarity matrix...")
+    
+    S = dok_matrix((41, 41), dtype=np.float32)
+    f = open(fn, "rb")
+
+    id_to_index = {}
+    for chunk in _read_in_chunks(f):
+        for sequence_start in range(0, len(chunk), 9):
+            sequence = chunk[sequence_start:sequence_start+9]
+            address1ID, address2ID, heuristic = struct.unpack('iib', sequence)
+            
+            if address1ID not in id_to_index:
+                id_to_index[address1ID] = len(id_to_index)
+            if address2ID not in id_to_index:
+                id_to_index[address2ID] = len(id_to_index)
+
+            address1Index = id_to_index[address1ID]
+            address2Index = id_to_index[address2ID]
+
+            S[address1Index, address2Index] += 1
+            S[address2Index, address1Index] += 1
+    print(S.todense())
+    return S
+    
 def create_visual_json(fn):
     """Given an input filename, reads the file and outputs the corresponding JSON formatted
     data to be visualized on the HTML visualization page. The input data MUST be specified

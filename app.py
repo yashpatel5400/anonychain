@@ -14,9 +14,10 @@ import subprocess
 
 from setup.sbm import create_sbm, create_clusters
 from analysis.pca import plot_pca
+from analysis.spectral import kmean_spectral, spectral_analysis_alt
 from analysis.deanonymize import draw_partitions, calc_accuracy, deanonymize
 from analysis.streaming import create_stream, streaming_analysis
-from blockchain.read import create_simple_graph
+from blockchain.read import create_simple_graph, create_similarity
 
 def _cmd_graph(argv):
     """Parses arguments as specified by argv and returns as a dictionary. Entries
@@ -79,13 +80,6 @@ def _cmd_graph(argv):
         params["clusters"] = create_clusters(params["cluster_sizes"])
     return params
 
-def streaming(argv):
-    params = _cmd_graph(argv)
-    clusters = params["clusters"]
-    G = create_sbm(clusters, params["p"], params["q"], params["weighted"])
-    G_stream = create_stream(G)
-    print([entry for entry in G_stream])
-
 def main(argv):
     """Main application method that parses command line arguments and runs hierarchical
     and kmeans clustering. CMD-line arguments are specified in the help menu (run with -h).
@@ -102,33 +96,37 @@ def main(argv):
         plot_pca(G, clusters, plot_2d=True, plot_3d=True, plot_lib=params["lib"])
     else:
         clusters = None
-        G = create_simple_graph("blockchain/graph.dat")
+        L = create_similarity("blockchain/mini.dat")
 
-    if params["guess_clusters"]:
-        hier_partitions, kmeans_partitions = deanonymize(G, k=None)
-    else: 
-        if params["run_test"]:
-            num_clusters = len(clusters)
-        else:
-            num_clusters = params["num_clusters"]
-        hier_partitions, kmeans_partitions = deanonymize(G, k=num_clusters)
-    
-    spring_pos = nx.spring_layout(G)
     if params["run_test"]:
+        num_clusters = len(clusters)
+        if params["guess_clusters"]:
+            hier_partitions, kmeans_partitions = deanonymize(G, k=None)
+        else:
+            hier_partitions, kmeans_partitions = deanonymize(G, k=num_clusters)
+
+        spring_pos = nx.spring_layout(G)
         print("hierarchical accuracy: {}".format(calc_accuracy(clusters, hier_partitions)))
         print("k-means accuracy: {}".format(calc_accuracy(clusters, kmeans_partitions)))
         weigh_edges = False
-    else:
-        weigh_edges = True
 
-    draw_partitions(G, spring_pos, clusters, "truth.png", weigh_edges=weigh_edges)
-    draw_partitions(G, spring_pos, hier_partitions, 
-        "eigen_guess.png", weigh_edges=weigh_edges)
-    draw_partitions(G, spring_pos, kmeans_partitions, 
-        "kmeans_guess.png", weigh_edges=weigh_edges)
+        draw_partitions(G, spring_pos, clusters, "truth.png", weigh_edges=weigh_edges)
+        draw_partitions(G, spring_pos, hier_partitions, 
+            "eigen_guess.png", weigh_edges=weigh_edges)
+        draw_partitions(G, spring_pos, kmeans_partitions, 
+            "kmeans_guess.png", weigh_edges=weigh_edges)
+
+    else:
+        num_clusters = params["num_clusters"]
+        weigh_edges = True
+        kmeans_partitions_alt = spectral_analysis_alt(L, k=num_clusters)
+        
+        G = nx.from_scipy_sparse_matrix(L)
+        spring_pos = nx.spring_layout(G)
+        draw_partitions(G, spring_pos, kmeans_partitions_alt, 
+            "kmeans_guess.png", weigh_edges=weigh_edges)
 
 if __name__ == "__main__":
     print("Cleaning up directories...")
     subprocess.call("./clean.sh", shell=True)
-    streaming(sys.argv[1:])
-    # main(sys.argv[1:])
+    main(sys.argv[1:])
