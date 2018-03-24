@@ -39,6 +39,10 @@ def draw_partitions(G, pos, partitions, fn, weigh_edges=False):
 
     Returns void
     """
+    if len(partitions) > len(colors):
+        print("Too many partitions to plot!")
+        return
+
     print("Plotting graph partitions...")
     nodes = list(G.nodes)
     if partitions is None:

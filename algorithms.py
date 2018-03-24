@@ -14,7 +14,7 @@ def get_algorithms(num_clusters):
             'n_jobs' : -1,
             'algorithm' : 'full'
         }),
-
+        
         ("MiniBatchKMeans", sklearn.cluster.MiniBatchKMeans, (), {
             'n_clusters' : num_clusters
         }),
@@ -31,7 +31,7 @@ def get_algorithms(num_clusters):
         }),
 
         ("DBSCAN", sklearn.cluster.DBSCAN, (), {
-            'eps' : .3,
+            'eps' : .5,
             'n_jobs' : -1
         })
     ]

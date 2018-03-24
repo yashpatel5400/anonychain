@@ -18,7 +18,7 @@ from analysis.pca import plot_pca
 from analysis.spectral import kmean_spectral, spectral_analysis_alt, cluster_analysis
 from analysis.deanonymize import draw_partitions, calc_accuracy, deanonymize
 from analysis.streaming import create_stream, streaming_analysis
-from blockchain.read import create_simple_graph, create_similarity, count_nodes
+from blockchain.read import get_data
 from algorithms import get_algorithms
 
 def _cmd_graph(argv):
@@ -28,7 +28,7 @@ def _cmd_graph(argv):
     Returns parameters dictionary
     """
     params = {
-        "byte_percent"    : 1.0,
+        "byte_percent"    : .01,
         "cluster_size"    : 10,
         "pca"             : True,
         "guess_clusters"  : False,
@@ -54,11 +54,7 @@ def _cmd_graph(argv):
             --cs <cluster_sizes> [(int list) size of each cluster (comma delimited)]
             --lib                [('matplotlib','plotly') for plotting library]"""
 
-    try:
-        opts, args = getopt.getopt(argv,"hr:d:w:c:n:g:p:q:",['lib=','cs='])
-    except getopt.GetoptError:
-        print("Using default values. To change use: \n{}".format(USAGE_STRING))
-
+    opts, args = getopt.getopt(argv,"hr:b:d:w:c:n:g:p:q:",['lib=','cs='])
     for opt, arg in opts:
         if opt in ('-h'):
             print(USAGE_STRING)
@@ -129,14 +125,15 @@ def main(argv):
         algorithms = get_algorithms(num_clusters)
         weigh_edges = True
         
+        print("Creating NetworkX graph...")
         G = nx.from_scipy_sparse_matrix(L)
         spring_pos = nx.spring_layout(G)    
 
         for algorithm in algorithms:
             alg_name, algorithm, args, kwds = algorithm
-            print("Running {} partitioning".format(alg_name))
+            print("Running {} partitioning...".format(alg_name))
             
-            partitions = cluster_analysis(L, num_clusters, algorithm, args, kwds)
+            partitions = cluster_analysis(L, algorithm, args, kwds)
             draw_partitions(G, spring_pos, partitions, 
                 "{}_guess.png".format(alg_name), weigh_edges=weigh_edges)
 

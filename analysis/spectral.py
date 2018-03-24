@@ -186,15 +186,16 @@ def spectral_analysis_alt(L, k=None, normalize=True):
         partitions[guess].add(i)
     return partitions
 
-def cluster_analysis(L, k, cluster_alg, args, kwds):
-    """Given an input graph (G), number of clusters (k), and whether the graph
+def cluster_analysis(L, cluster_alg, args, kwds):
+    """Given an input graph (G), and whether the graph
     Laplacian is to be normalized (True) or not (False) runs spectral clustering
     as implemented in scikit-learn (empirically found to be less effective)
 
     Returns Partitions (list of sets of ints)
     """
     labels = cluster_alg(*args, **kwds).fit_predict(L)
-    partitions = [set() for _ in range(k)]
+    num_clusters = len(np.unique(labels))
+    partitions = [set() for _ in range(num_clusters)]
     for i, guess in enumerate(labels):
         partitions[guess].add(i)
     return partitions

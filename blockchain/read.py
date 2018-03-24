@@ -184,15 +184,16 @@ def get_data(data_src, percent_bytes=None):
         result = subprocess.run(size_cmd, stderr=subprocess.PIPE)
         bash_output = result.stderr.decode('utf-8')
         size_output = [line for line in bash_output.split("\n") if "length" in line.lower()][0]
-        total_bytes = int(size.output.split(":")[1].trim())
-
-        num_bytes = int(total_bytes * percent_bytes)
-
-        download_command = "curl https://s3.amazonaws.com/bitcoinclustering/cluster_data.dat" \
+        total_bytes = int(size_output.split(":")[1].split()[0].strip())
+        
+        num_lines   = total_bytes / 9
+        num_bytes = 9 * int(num_lines * percent_bytes)
+        
+        download_command = "curl https://s3.amazonaws.com/bitcoinclustering/cluster_data.dat " \
             "| head -c {} > {}".format(num_bytes, fn)
-        subprocess.call(download_command)        
+        subprocess.run(download_command, shell=True)        
 
-    size = count_nodes(fn)
+    size = _count_nodes(fn)
     return _create_similarity(fn, size)
         
 if __name__ == "__main__":
