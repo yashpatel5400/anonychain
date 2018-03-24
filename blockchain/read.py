@@ -92,7 +92,7 @@ def _create_simple_graph(fn):
                 G.add_edge(address1ID, address2ID, weight=1)
     return G
 
-def _count_nodes(fn):
+def _map_id_to_index(fn):
     f = open(fn, "rb")
     id_to_index = {}
     for chunk in _read_in_chunks(f):
@@ -104,7 +104,7 @@ def _count_nodes(fn):
                 id_to_index[address1ID] = len(id_to_index)
             if address2ID not in id_to_index:
                 id_to_index[address2ID] = len(id_to_index)
-    return len(id_to_index)  
+    return id_to_index
 
 def _create_similarity(fn, size):
     """Given an input filename, constructs the similarity matrix for the associated
@@ -188,13 +188,14 @@ def get_data(data_src, percent_bytes=None):
         
         num_lines   = total_bytes / 9
         num_bytes = 9 * int(num_lines * percent_bytes)
-        
+
         download_command = "curl https://s3.amazonaws.com/bitcoinclustering/cluster_data.dat " \
             "| head -c {} > {}".format(num_bytes, fn)
         subprocess.run(download_command, shell=True)        
 
-    size = _count_nodes(fn)
-    return _create_similarity(fn, size)
+    id_to_index = _map_id_to_index(fn)
+    index_to_id = {v: k for k, v in id_to_index.items()}
+    return _create_similarity(fn, len(index_to_id)), index_to_id
         
 if __name__ == "__main__":
     G = create_visual_json("blockchain/data")

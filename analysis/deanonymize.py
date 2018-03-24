@@ -12,6 +12,12 @@ import numpy as np
 from analysis.constants import colors
 from analysis.spectral import spectral_analysis, kmeans_analysis
 
+def write_results(partitions, index_to_id, fn):
+    with open("output/{}".format(fn), "w") as f:
+        for partition_id, partition in enumerate(partitions):
+            node_ids = [index_to_id[node] for node in partition]
+            f.writelines("{} : {}\n".format(partition_id, node_ids))
+
 def _reorder_clusters(clusters, partitions):
     """Given the ground truth clusters and partitions (list of sets, where the 
     contents of the first set are the nodes that belong to "cluster 1"), reorders the
@@ -32,7 +38,7 @@ def _reorder_clusters(clusters, partitions):
         reordered_partitions[i] = partitions[most_similar]
     return reordered_partitions
 
-def draw_partitions(G, pos, partitions, fn, weigh_edges=False):
+def draw_results(G, pos, partitions, fn, weigh_edges=False):
     """Given a graph (G), the node positions (pos), the partitions on the nodes, the destination
     filename, and whether or not the edges are weighted, plots a figure and saves it
     to the destination location (in the output/ folder)

@@ -16,7 +16,7 @@ import subprocess
 from setup.sbm import create_sbm, create_clusters
 from analysis.pca import plot_pca
 from analysis.spectral import kmean_spectral, spectral_analysis_alt, cluster_analysis
-from analysis.deanonymize import draw_partitions, calc_accuracy, deanonymize
+from analysis.deanonymize import write_results, draw_results, calc_accuracy, deanonymize
 from analysis.streaming import create_stream, streaming_analysis
 from blockchain.read import get_data
 from algorithms import get_algorithms
@@ -100,7 +100,7 @@ def main(argv):
         clusters = None
         # change the line below if the remote source of the data is updated
         data_src = "https://s3.amazonaws.com/bitcoinclustering/cluster_data.dat"
-        L = get_data(data_src, percent_bytes=params["byte_percent"])
+        L, index_to_id = get_data(data_src, percent_bytes=params["byte_percent"])
 
     if params["run_test"]:
         num_clusters = len(clusters)
@@ -126,8 +126,8 @@ def main(argv):
         weigh_edges = True
         
         print("Creating NetworkX graph...")
-        G = nx.from_scipy_sparse_matrix(L)
-        spring_pos = nx.spring_layout(G)    
+        # G = nx.from_scipy_sparse_matrix(L)
+        # spring_pos = nx.spring_layout(G)    
 
         to_run = set(["KMeans","MiniBatchKMeans","SpectralClustering"])
         for alg_name in algorithms:
@@ -136,8 +136,9 @@ def main(argv):
                 print("Running {} partitioning...".format(alg_name))
                 
                 partitions = cluster_analysis(L, algorithm, args, kwds)
-                draw_partitions(G, spring_pos, partitions, 
-                    "{}_guess.png".format(alg_name), weigh_edges=weigh_edges)
+                write_results(partitions, index_to_id, "{}_partitions.txt".format(alg_name))
+                # draw_results(G, spring_pos, partitions, 
+                #     "{}_guess.png".format(alg_name), weigh_edges=weigh_edges)
 
 if __name__ == "__main__":
     print("Cleaning up directories...")
