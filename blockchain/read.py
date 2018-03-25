@@ -4,6 +4,8 @@ __name__   = __init__.py
 __description__ = Part that constructs the graph given the input data dump
 """
 
+import pickle
+import os
 import subprocess
 import struct
 
@@ -178,26 +180,35 @@ def _create_visual_json(fn):
     print("Produced visualization JSON!")
 
 def get_data(data_src, percent_bytes=None):
-    fn = "blockchain/data"
-    if percent_bytes is not None:
-        size_cmd = ["wget", "--spider", data_src]
-        result = subprocess.run(size_cmd, stderr=subprocess.PIPE)
-        bash_output = result.stderr.decode('utf-8')
-        size_output = [line for line in bash_output.split("\n") if "length" in line.lower()][0]
-        total_bytes = int(size_output.split(":")[1].split()[0].strip())
+    fn = "blockchain/data_{0:f}".format(percent_bytes)
+    pickle_L_fn = "{}.pickle".format(fn)
+    pickle_index_to_id_fn = "blockchain/index_to_id_{0:f}.pickle".format(percent_bytes)
+
+    if os.path.exists(pickle_L_fn) and os.path.exists(pickle_index_to_id_fn):
+        L = pickle.load(open(pickle_L_fn, "rb"))
+        index_to_id = pickle.load(open(pickle_index_to_id_fn, "rb"))
+         
+    else:
+        if percent_bytes is not None:
+            size_cmd = ["wget", "--spider", data_src]
+            result = subprocess.run(size_cmd, stderr=subprocess.PIPE)
+            bash_output = result.stderr.decode('utf-8')
+            size_output = [line for line in bash_output.split("\n") if "length" in line.lower()][0]
+            total_bytes = int(size_output.split(":")[1].split()[0].strip())
+            
+            num_lines   = total_bytes / 9
+            num_bytes   = 9 * int(num_lines * percent_bytes)
+
+            download_command = "curl https://s3.amazonaws.com/bitcoinclustering/cluster_data.dat " \
+                "| head -c {} > {}".format(num_bytes, fn)
+            subprocess.run(download_command, shell=True)        
+
+        id_to_index = _map_id_to_index(fn)
+        index_to_id = {v: k for k, v in id_to_index.items()}
+        L = _create_similarity(fn, len(index_to_id))
         
-        num_lines   = total_bytes / 9
-        num_bytes   = 9 * int(num_lines * percent_bytes)
-
-        download_command = "curl https://s3.amazonaws.com/bitcoinclustering/cluster_data.dat " \
-            "| head -c {} > {}".format(num_bytes, fn)
-        subprocess.run(download_command, shell=True)        
-
-    id_to_index = _map_id_to_index(fn)
-    index_to_id = {v: k for k, v in id_to_index.items()}
-
-    L = _create_similarity(fn, len(index_to_id))
-    write_csv(L)
+        pickle.dump(L, open(pickle_L_fn, "wb"))
+        pickle.dump(index_to_id, open(pickle_index_to_id_fn, "wb"))
     return L, index_to_id
 
 def write_csv(L):

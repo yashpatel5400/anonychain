@@ -9,7 +9,6 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
-import seaborn as sns
 from sklearn.cluster import KMeans, SpectralClustering
 from scipy.sparse.linalg import svds
 

@@ -1,7 +1,10 @@
+*.csv
 *.txt
 *.html
 *.png
 *.dat
+*.pickle
+blockchain/data_*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
