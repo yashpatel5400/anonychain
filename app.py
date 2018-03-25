@@ -123,11 +123,11 @@ def main(argv):
     else:
         num_clusters = params["num_clusters"]
         algorithms = get_algorithms(num_clusters)
-        weigh_edges = True
+        weigh_edges = False
         
         print("Creating NetworkX graph...")
-        # G = nx.from_scipy_sparse_matrix(L)
-        # spring_pos = nx.spring_layout(G)    
+        G = nx.from_scipy_sparse_matrix(L)
+        spring_pos = nx.spring_layout(G)    
 
         to_run = set(["KMeans","MiniBatchKMeans","SpectralClustering"])
         for alg_name in algorithms:
@@ -137,8 +137,8 @@ def main(argv):
                 
                 partitions = cluster_analysis(L, algorithm, args, kwds)
                 write_results(partitions, index_to_id, "{}_partitions.txt".format(alg_name))
-                # draw_results(G, spring_pos, partitions, 
-                #     "{}_guess.png".format(alg_name), weigh_edges=weigh_edges)
+                draw_results(G, spring_pos, partitions, 
+                    "{}_guess.png".format(alg_name), weigh_edges=weigh_edges)
 
 if __name__ == "__main__":
     print("Cleaning up directories...")

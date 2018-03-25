@@ -187,7 +187,7 @@ def get_data(data_src, percent_bytes=None):
         total_bytes = int(size_output.split(":")[1].split()[0].strip())
         
         num_lines   = total_bytes / 9
-        num_bytes = 9 * int(num_lines * percent_bytes)
+        num_bytes   = 9 * int(num_lines * percent_bytes)
 
         download_command = "curl https://s3.amazonaws.com/bitcoinclustering/cluster_data.dat " \
             "| head -c {} > {}".format(num_bytes, fn)
@@ -195,7 +195,19 @@ def get_data(data_src, percent_bytes=None):
 
     id_to_index = _map_id_to_index(fn)
     index_to_id = {v: k for k, v in id_to_index.items()}
-    return _create_similarity(fn, len(index_to_id)), index_to_id
-        
+
+    L = _create_similarity(fn, len(index_to_id))
+    write_csv(L)
+    return L, index_to_id
+
+def write_csv(L):
+    header = []
+    with open("data.csv","w") as f:
+        f.write("Source,Target,Type,Weight\n")
+        rows, cols = L.shape
+        for i in range(rows):
+            for j in range(cols):
+                f.write("{},{},unweighted,{}\n".format(i,j,L[i,j]))      
+
 if __name__ == "__main__":
     G = create_visual_json("blockchain/data")
