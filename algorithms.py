@@ -24,12 +24,12 @@ def get_algorithms(num_clusters):
             'n_jobs' : -1,
             'affinity' : 'rbf'
         }),
-
+        
         "AffinityPropagation": (sklearn.cluster.AffinityPropagation, (), {
             'damping' : .5,
             'affinity' : 'euclidean'
         }),
-
+        
         "DBSCAN": (sklearn.cluster.DBSCAN, (), {
             'eps' : .5,
             'n_jobs' : -1
