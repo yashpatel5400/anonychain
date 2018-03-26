@@ -12,6 +12,11 @@ import numpy as np
 from analysis.constants import colors
 from analysis.spectral import spectral_analysis, kmeans_analysis
 
+try:
+    import blocksci
+except:
+    pass
+
 def convert_address_to_compact(address):
     return address.address_num + (int(address.type) << 29)
 
@@ -22,11 +27,10 @@ def convert_compact_to_address(chain, compact):
 
 def write_results(partitions, index_to_id, fn):
     try:
-        import blocksci
         chain = blocksci.Blockchain("/blocksci/bitcoin")
     except:
         pass
-
+        
     with open("output/{}".format(fn), "w") as f:
         for partition_id, partition in enumerate(partitions):
             try:
