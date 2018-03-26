@@ -12,11 +12,29 @@ import numpy as np
 from analysis.constants import colors
 from analysis.spectral import spectral_analysis, kmeans_analysis
 
+def convert_address_to_compact(address):
+    return address.address_num + (int(address.type) << 29)
+
+def convert_compact_to_address(chain, compact):
+    address_type = compact >> 29
+    address_num = compact - (address_type << 29)
+    return chain.address_from_index(address_num, blocksci.address_type(address_type))
+
 def write_results(partitions, index_to_id, fn):
+    try:
+        import blocksci
+        chain = blocksci.Blockchain("/blocksci/bitcoin")
+    except:
+        pass
+
     with open("output/{}".format(fn), "w") as f:
         for partition_id, partition in enumerate(partitions):
-            node_ids = [index_to_id[node] for node in partition]
-            f.writelines("{} : {}\n".format(partition_id, node_ids))
+            try:
+                node_addresses = [convert_compact_to_address(chain, 
+                    index_to_id[node]) for node in partition]
+            except:
+                node_addresses = [index_to_id[node] for node in partition]
+            f.writelines("{} : {}\n".format(partition_id, node_addresses))
 
 def _reorder_clusters(clusters, partitions):
     """Given the ground truth clusters and partitions (list of sets, where the 
