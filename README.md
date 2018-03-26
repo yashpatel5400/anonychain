@@ -49,3 +49,13 @@ Running accuracy.py (without arguments) runs several trials on various p, q valu
 ```
 python3 accuracy.py
 ```
+
+Next Steps
+=====================
+- Apply to full dataset (can approximately perform on .01% of the dataset in a reasonable time)
+- Graph coarsening
+	- Coarsen the graph
+	- Quick partition of the graph
+	- Coarsen each of these subgraphs
+	- Fully partition subgraphs
+	- Combine results of partitioning
