@@ -136,7 +136,7 @@ def main(argv):
                 print("Running {} partitioning...".format(alg_name))
                 
                 partitions = cluster_analysis(L, algorithm, args, kwds)
-                write_results(partitions, index_to_id, "{}_partitions.txt".format(alg_name))
+                write_results(partitions, index_to_id, "{}_guess".format(alg_name))
                 # draw_results(G, spring_pos, partitions, 
                 #     "{}_guess.png".format(alg_name), weigh_edges=weigh_edges)
 
