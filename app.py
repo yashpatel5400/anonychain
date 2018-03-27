@@ -111,7 +111,7 @@ def main(argv):
         clusters = None
         # change the line below if the remote source of the data is updated
         data_src = "https://s3.amazonaws.com/bitcoinclustering/cluster_data.dat"
-        L, index_to_id = get_data(data_src, percent_bytes=params["byte_percent"])
+        S, index_to_id = get_data(data_src, percent_bytes=params["byte_percent"])
 
     if params["run_test"]:
         spring_pos  = nx.spring_layout(G)
@@ -178,7 +178,7 @@ def main(argv):
         weigh_edges = False
         
         print("Creating NetworkX graph...")
-        # G = nx.from_scipy_sparse_matrix(L)
+        # G = nx.from_scipy_sparse_matrix(S)
         # spring_pos = nx.spring_layout(G)    
 
         for alg_name in algorithms:
@@ -186,7 +186,7 @@ def main(argv):
                 algorithm, args, kwds = algorithms[alg_name]
                 print("Running {} partitioning...".format(alg_name))
                 
-                partitions = cluster_analysis(L, algorithm, args, kwds)
+                partitions = cluster_analysis(S, algorithm, args, kwds)
                 write_results(partitions, index_to_id, "{}_guess".format(alg_name))
                 # draw_results(G, spring_pos, partitions, 
                 #     "{}_guess.png".format(alg_name), weigh_edges=weigh_edges)
