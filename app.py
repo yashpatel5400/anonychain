@@ -30,7 +30,7 @@ def _cmd_graph(argv):
     params = {
         "byte_percent"    : .01,
         "cluster_size"    : 10,
-        "pca"             : True,
+        "pca"             : False,
         "guess_clusters"  : False,
         "num_clusters"    : 2,
         "run_test"        : True,
@@ -47,8 +47,8 @@ def _cmd_graph(argv):
             -d <display_bool>    [(y/n) for whether to show PCA projections]
             -g <guess_bool>      [(y/n) to guess the number of clusters vs. take it as known] 
             -n <num_cluster>     [(int) number of clusters (distinct people)]
-            -p <p_value>         [(0,1) for in-cluster probability]
-            -q <q_value>         [(0,1) for non-cluster probability] 
+            -p <p_value>         [(0,1) float for in-cluster probability]
+            -q <q_value>         [(0,1) float for non-cluster probability] 
             -r <run_test_bool>   [(y/n) for whether to create SBM to run test or run on actual data]
             -w <weighted_graph>  [(y/n) for whether to have weights on edges (randomized)]
             --cs <cluster_sizes> [(int list) size of each cluster (comma delimited)]
@@ -91,11 +91,15 @@ def main(argv):
     Returns void
     """
     params = _cmd_graph(argv)
-
+    # algorithms to be used in the clustering runs (BOTH in testing and full analysis)
+    to_run = set(["KMeans","MiniBatchKMeans","SpectralClustering"])
+    
     if params["run_test"]:
         clusters = params["clusters"]
         G = create_sbm(clusters, params["p"], params["q"], params["weighted"])
-        plot_pca(G, clusters, plot_2d=True, plot_3d=True, plot_lib=params["lib"])
+
+        if params["pca"]:
+            plot_pca(G, clusters, plot_2d=True, plot_3d=True, plot_lib=params["lib"])
     else:
         clusters = None
         # change the line below if the remote source of the data is updated
@@ -104,22 +108,34 @@ def main(argv):
 
     if params["run_test"]:
         num_clusters = len(clusters)
+        algorithms = get_algorithms(num_clusters)
+
+        spring_pos  = nx.spring_layout(G)
+        weigh_edges = False
+        draw_results(G, spring_pos, clusters, "truth.png", weigh_edges=weigh_edges)
+
         if params["guess_clusters"]:
             hier_partitions, kmeans_partitions = deanonymize(G, k=None)
+            print("hierarchical accuracy: {}".format(calc_accuracy(clusters, hier_partitions)))
+            print("k-means accuracy: {}".format(calc_accuracy(clusters, kmeans_partitions)))
+            
+            draw_results(G, spring_pos, hier_partitions, 
+                "eigen_guess.png", weigh_edges=weigh_edges)
+            draw_results(G, spring_pos, kmeans_partitions, 
+                "kmeans_guess.png", weigh_edges=weigh_edges)
         else:
-            hier_partitions, kmeans_partitions = deanonymize(G, k=num_clusters)
-
-        spring_pos = nx.spring_layout(G)
-        print("hierarchical accuracy: {}".format(calc_accuracy(clusters, hier_partitions)))
-        print("k-means accuracy: {}".format(calc_accuracy(clusters, kmeans_partitions)))
-        weigh_edges = False
-
-        draw_partitions(G, spring_pos, clusters, "truth.png", weigh_edges=weigh_edges)
-        draw_partitions(G, spring_pos, hier_partitions, 
-            "eigen_guess.png", weigh_edges=weigh_edges)
-        draw_partitions(G, spring_pos, kmeans_partitions, 
-            "kmeans_guess.png", weigh_edges=weigh_edges)
-
+            for alg_name in algorithms:
+                if alg_name in to_run:
+                    algorithm, args, kwds = algorithms[alg_name]
+                    print("Running {} partitioning...".format(alg_name))
+                    
+                    L = nx.laplacian_matrix(G)
+                    partitions = cluster_analysis(L, algorithm, args, kwds)
+                    
+                    print("{} accuracy: {}".format(alg_name, 
+                        calc_accuracy(clusters, partitions)))
+                    draw_results(G, spring_pos, partitions, 
+                        "{}_guess.png".format(alg_name), weigh_edges=weigh_edges)
     else:
         num_clusters = params["num_clusters"]
         algorithms = get_algorithms(num_clusters)
@@ -129,7 +145,6 @@ def main(argv):
         # G = nx.from_scipy_sparse_matrix(L)
         # spring_pos = nx.spring_layout(G)    
 
-        to_run = set(["KMeans","MiniBatchKMeans","SpectralClustering"])
         for alg_name in algorithms:
             if alg_name in to_run:
                 algorithm, args, kwds = algorithms[alg_name]
