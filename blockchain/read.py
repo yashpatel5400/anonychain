@@ -205,17 +205,17 @@ def get_data(data_src, percent_bytes=None):
 
         id_to_index = _map_id_to_index(fn)
         index_to_id = {v: k for k, v in id_to_index.items()}
-        L = _create_similarity(fn, len(index_to_id))
+        S = _create_similarity(fn, len(index_to_id))
         
-        pickle.dump(L, open(pickle_L_fn, "wb"))
+        pickle.dump(S, open(pickle_L_fn, "wb"))
         pickle.dump(index_to_id, open(pickle_index_to_id_fn, "wb"))
-    return L, index_to_id
+    return S, index_to_id
 
-def write_csv(L):
+def write_csv(S):
     header = []
     with open("data.csv","w") as f:
         f.write("Source,Target,Type,Weight\n")
-        rows, cols = L.shape
+        rows, cols = S.shape
         for i in range(rows):
             for j in range(cols):
                 f.write("{},{},unweighted,{}\n".format(i,j,L[i,j]))      

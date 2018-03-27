@@ -34,7 +34,7 @@ def _cmd_graph(argv):
         "guess_clusters"  : False,
         "num_clusters"    : 2,
         "run_test"        : True,
-        "weighted"        : True,
+        "weighted"        : False,
         "p"               : 0.75,
         "q"               : 0.25,
         "cs"              : None,
@@ -107,30 +107,35 @@ def main(argv):
         L, index_to_id = get_data(data_src, percent_bytes=params["byte_percent"])
 
     if params["run_test"]:
-        num_clusters = len(clusters)
-        algorithms = get_algorithms(num_clusters)
-
         spring_pos  = nx.spring_layout(G)
         weigh_edges = False
         draw_results(G, spring_pos, clusters, "truth.png", weigh_edges=weigh_edges)
 
         if params["guess_clusters"]:
             hier_partitions, kmeans_partitions = deanonymize(G, k=None)
-            print("hierarchical accuracy: {}".format(calc_accuracy(clusters, hier_partitions)))
-            print("k-means accuracy: {}".format(calc_accuracy(clusters, kmeans_partitions)))
-            
-            draw_results(G, spring_pos, hier_partitions, 
-                "eigen_guess.png", weigh_edges=weigh_edges)
-            draw_results(G, spring_pos, kmeans_partitions, 
-                "kmeans_guess.png", weigh_edges=weigh_edges)
         else:
+            num_clusters = len(clusters)
+            hier_partitions, kmeans_partitions = deanonymize(G, k=num_clusters)
+
+        print("Manual hierarchical accuracy: {}".format(
+            calc_accuracy(clusters, hier_partitions)))
+        print("Manual k-means accuracy: {}".format(
+            calc_accuracy(clusters, kmeans_partitions)))
+        
+        draw_results(G, spring_pos, hier_partitions, 
+            "ManualHierarchical_guess.png", weigh_edges=weigh_edges)
+        draw_results(G, spring_pos, kmeans_partitions, 
+            "ManualKmeans_guess.png", weigh_edges=weigh_edges)
+
+        if not params["guess_clusters"]:
+            algorithms = get_algorithms(num_clusters)
+            S = nx.adjacency_matrix(G)
+            
             for alg_name in algorithms:
                 if alg_name in to_run:
                     algorithm, args, kwds = algorithms[alg_name]
                     print("Running {} partitioning...".format(alg_name))
-                    
-                    L = nx.laplacian_matrix(G)
-                    partitions = cluster_analysis(L, algorithm, args, kwds)
+                    partitions = cluster_analysis(S, algorithm, args, kwds)
                     
                     print("{} accuracy: {}".format(alg_name, 
                         calc_accuracy(clusters, partitions)))

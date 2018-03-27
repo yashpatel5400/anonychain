@@ -152,7 +152,7 @@ def kmeans_analysis(G, k):
     print("Partitioning w/ k-means on {} clusters".format(k))
     
     L = nx.laplacian_matrix(G).asfptype()
-    return kmean_spectral(L)
+    return kmean_spectral(L, k)
 
 def kmean_spectral(L, k):
     """Given an input matrix and number of clusters k, runs spectral clustering
