@@ -67,6 +67,9 @@ def create_sbm(clusters, p, q, is_weighted):
                     else:
                         G.add_edge(cur_node, other_node)
 
-    print("Prop same: {}; Prop diff: {}".format(
-        verify_same/same_cluster_nodes, verify_diff/diff_cluster_nodes))
+    if same_cluster_nodes == 0:
+        print("Singletons graph produced!")
+    else:
+        print("Prop same: {}; Prop diff: {}".format(
+            verify_same/same_cluster_nodes, verify_diff/diff_cluster_nodes))
     return G

@@ -143,10 +143,11 @@ def main(argv):
                 contracted_spring_pos = nx.spring_layout(contracted_G)
                 S = nx.adjacency_matrix(contracted_G)
 
-                nx.draw(contracted_G, contracted_spring_pos, node_size=100)
-                plt.axis('off')
-                plt.savefig("output/contracted.png")
-                plt.close()
+                hier_partitions, kmeans_partitions = deanonymize(contracted_G, k=num_clusters)
+                draw_results(contracted_G, contracted_spring_pos, hier_partitions, 
+                    "ManualHierarchical_contracted.png", weigh_edges=weigh_edges)
+                draw_results(contracted_G, contracted_spring_pos, kmeans_partitions, 
+                    "ManualKmeans_contracted.png", weigh_edges=weigh_edges)
 
             else:
                 S = nx.adjacency_matrix(G)
@@ -160,6 +161,8 @@ def main(argv):
                     start = time.time()
                     partitions = cluster_analysis(S, algorithm, args, kwds)
                     if params["graph_coarsen"] is not None:
+                        draw_results(contracted_G, contracted_spring_pos, partitions, 
+                            "{}_contracted.png".format(alg_name), weigh_edges=weigh_edges)
                         partitions = reconstruct_contracted(identified_nodes, partitions)
                     end = time.time()
 

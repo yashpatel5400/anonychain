@@ -31,7 +31,7 @@ def contract_edges(G, num_edges):
         random_edge = edges[random.randint(0,len(edges)-1)]
         node_to_contract = random_edge[1]
         identified_nodes[node_to_contract] = random_edge[0] # right gets contracted into left
-        G = nx.contracted_edge(G, random_edge)
+        G = nx.contracted_edge(G, random_edge, self_loops=False)
     return G, identified_nodes
 
 def reconstruct_contracted(identified_nodes, partitions):

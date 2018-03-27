@@ -181,11 +181,11 @@ def _create_visual_json(fn):
 
 def get_data(data_src, percent_bytes=None):
     fn = "blockchain/data_{0:f}".format(percent_bytes)
-    pickle_L_fn = "{}.pickle".format(fn)
+    pickle_S_fn = "{}.pickle".format(fn)
     pickle_index_to_id_fn = "blockchain/index_to_id_{0:f}.pickle".format(percent_bytes)
 
-    if os.path.exists(pickle_L_fn) and os.path.exists(pickle_index_to_id_fn):
-        L = pickle.load(open(pickle_L_fn, "rb"))
+    if os.path.exists(pickle_S_fn) and os.path.exists(pickle_index_to_id_fn):
+        S = pickle.load(open(pickle_S_fn, "rb"))
         index_to_id = pickle.load(open(pickle_index_to_id_fn, "rb"))
          
     else:
@@ -207,7 +207,7 @@ def get_data(data_src, percent_bytes=None):
         index_to_id = {v: k for k, v in id_to_index.items()}
         S = _create_similarity(fn, len(index_to_id))
         
-        pickle.dump(S, open(pickle_L_fn, "wb"))
+        pickle.dump(S, open(pickle_S_fn, "wb"))
         pickle.dump(index_to_id, open(pickle_index_to_id_fn, "wb"))
     return S, index_to_id
 
@@ -218,7 +218,7 @@ def write_csv(S):
         rows, cols = S.shape
         for i in range(rows):
             for j in range(cols):
-                f.write("{},{},unweighted,{}\n".format(i,j,L[i,j]))      
+                f.write("{},{},unweighted,{}\n".format(i,j,S[i,j]))      
 
 if __name__ == "__main__":
     G = create_visual_json("blockchain/data")
