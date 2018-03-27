@@ -20,6 +20,7 @@ from analysis.spectral import kmean_spectral, spectral_analysis_alt, cluster_ana
 from analysis.deanonymize import write_results, draw_results, calc_accuracy, deanonymize
 from analysis.streaming import create_stream, streaming_analysis
 from blockchain.read import get_data
+from coarsen.contract import contract_edges, reconstruct_contracted
 from algorithms import get_algorithms
 
 def _cmd_graph(argv):
@@ -38,7 +39,9 @@ def _cmd_graph(argv):
         "weighted"        : False,
         "p"               : 0.75,
         "q"               : 0.25,
+
         "cs"              : None,
+        "graph_coarsen"   : None,
         "lib"             : "matplotlib"
     }
 
@@ -52,10 +55,12 @@ def _cmd_graph(argv):
             -q <q_value>         [(0,1) float for non-cluster probability] 
             -r <run_test_bool>   [(y/n) for whether to create SBM to run test or run on actual data]
             -w <weighted_graph>  [(y/n) for whether to have weights on edges (randomized)]
+            
             --cs <cluster_sizes> [(int list) size of each cluster (comma delimited)]
+            --gc <graph_coarsen> [(0,1) percent of nodes to be coarsened (default 0)]
             --lib                [('matplotlib','plotly') for plotting library]"""
 
-    opts, args = getopt.getopt(argv,"hr:b:d:w:c:n:g:p:q:",['lib=','cs='])
+    opts, args = getopt.getopt(argv,"hr:b:d:w:c:n:g:p:q:",['lib=','cs=','gc='])
     for opt, arg in opts:
         if opt in ('-h'):
             print(USAGE_STRING)
@@ -73,6 +78,7 @@ def _cmd_graph(argv):
         elif opt in ("-q"): params["q"] = float(arg)
         
         elif opt in ("--cs"):  params["cs"] = arg
+        elif opt in ("--gc"):  params["graph_coarsen"] = float(arg)
         elif opt in ("--lib"): params["lib"] = arg
 
     if params["run_test"]:
@@ -130,16 +136,33 @@ def main(argv):
 
         if not params["guess_clusters"]:
             algorithms = get_algorithms(num_clusters)
-            S = nx.adjacency_matrix(G)
-            
+
+            if params["graph_coarsen"] is not None:
+                to_contract = int(len(G.edges) * params["graph_coarsen"])
+                contracted_G, identified_nodes = contract_edges(G, num_edges=to_contract)
+                contracted_spring_pos = nx.spring_layout(contracted_G)
+                S = nx.adjacency_matrix(contracted_G)
+
+                nx.draw(contracted_G, contracted_spring_pos, node_size=100)
+                plt.axis('off')
+                plt.savefig("output/contracted.png")
+                plt.close()
+
+            else:
+                S = nx.adjacency_matrix(G)
+        
             for alg_name in algorithms:
                 if alg_name in to_run:
                     algorithm, args, kwds = algorithms[alg_name]
-                    print("Running {} partitioning...".format(alg_name))
+                    print("Running {} partitioning (coarsened: {})...".format(
+                        alg_name, params["graph_coarsen"]))
 
                     start = time.time()
                     partitions = cluster_analysis(S, algorithm, args, kwds)
+                    if params["graph_coarsen"] is not None:
+                        partitions = reconstruct_contracted(identified_nodes, partitions)
                     end = time.time()
+
                     print("{} time elapsed (s): {}".format(alg_name, end - start))
                     
                     print("{} accuracy: {}".format(alg_name, 
