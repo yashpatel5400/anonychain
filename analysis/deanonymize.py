@@ -36,10 +36,10 @@ def write_results(partitions, index_to_id, fn):
     with open("output/{}.txt".format(fn), "w") as f:
         for partition_id, partition in enumerate(partitions):
             try:
-                node_addresses = [convert_compact_to_address(chain, 
-                    index_to_id[node]).address_string for node in partition]
+                node_addresses = { convert_compact_to_address(chain, 
+                    index_to_id[node]).address_string for node in partition }
             except:
-                node_addresses = [index_to_id[node] for node in partition]
+                node_addresses = { index_to_id[node] for node in partition }
             f.writelines("{} : {}\n".format(partition_id, node_addresses))
             partition_to_nodes[partition_id] = node_addresses
     pickle.dump(partition_to_nodes, open("output/{}.pickle".format(fn),"wb"))
