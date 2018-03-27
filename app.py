@@ -20,6 +20,7 @@ from analysis.spectral import kmean_spectral, spectral_analysis_alt, cluster_ana
 from analysis.deanonymize import write_results, draw_results, calc_accuracy, deanonymize
 from analysis.streaming import create_stream, streaming_analysis
 from blockchain.read import get_data
+from blockchain.metis import format_metis, run_metis
 from coarsen.contract import contract_edges, reconstruct_contracted
 from algorithms import get_algorithms
 
@@ -34,6 +35,7 @@ def _cmd_graph(argv):
         "cluster_size"    : 10,
         "pca"             : False,
         "guess_clusters"  : False,
+        "run_metis"       : True,
         "num_clusters"    : 2,
         "run_test"        : True,
         "weighted"        : False,
@@ -50,6 +52,7 @@ def _cmd_graph(argv):
             -c <cluster_size>    [(int) size of each cluster (assumed to be same for all)]
             -d <display_bool>    [(y/n) for whether to show PCA projections]
             -g <guess_bool>      [(y/n) to guess the number of clusters vs. take it as known] 
+            -m <run_metis>       [(y/n) to additionally enable METIS clustering]
             -n <num_cluster>     [(int) number of clusters (distinct people)]
             -p <p_value>         [(0,1) float for in-cluster probability]
             -q <q_value>         [(0,1) float for non-cluster probability] 
@@ -70,6 +73,7 @@ def _cmd_graph(argv):
         elif opt in ("-c"): params["cluster_size"]   = int(arg)
         elif opt in ("-d"): params["pca"]            = (arg == "y")
         elif opt in ("-g"): params["guess_clusters"] = (arg == "y")
+        elif opt in ("-m"): params["run_metis"]      = (arg == "y")
         elif opt in ("-n"): params["num_clusters"]   = int(arg)
         elif opt in ("-r"): params["run_test"]       = (arg == "y")
         elif opt in ("-w"): params["weighted"]       = (arg == "y")
@@ -151,7 +155,17 @@ def main(argv):
 
             else:
                 S = nx.adjacency_matrix(G)
+                print(type(S))
         
+            if params["run_metis"]:
+                metis_fn = "output/test_metis.graph"
+                format_metis(S, metis_fn)
+                metis_partitions = run_metis(metis_fn, num_clusters)
+
+                print("Metis accuracy: {}".format(calc_accuracy(clusters, metis_partitions)))
+                draw_results(G, spring_pos, metis_partitions, 
+                    "metis_guess.png", weigh_edges=weigh_edges)
+
             for alg_name in algorithms:
                 if alg_name in to_run:
                     algorithm, args, kwds = algorithms[alg_name]
@@ -190,6 +204,10 @@ def main(argv):
                 write_results(partitions, index_to_id, "{}_guess".format(alg_name))
                 # draw_results(G, spring_pos, partitions, 
                 #     "{}_guess.png".format(alg_name), weigh_edges=weigh_edges)
+
+        if params["run_metis"]:
+            metis_fn = "blockchain/data_{0:f}.pickle".format(percent_bytes)
+            metis_partitions = metis_from_pickle(metis_fn, num_clusters)
 
 if __name__ == "__main__":
     print("Cleaning up directories...")
