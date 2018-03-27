@@ -7,6 +7,7 @@ provided in the Fistful of Bitcoin paper to that employed here.
 
 import numpy as np
 import pandas as pd
+import pickle
 
 def extract_from_raw(fn):
     """
@@ -56,6 +57,7 @@ def extract_from_raw(fn):
 
 def write_extracted(fn):
     label_to_wallets = extract_from_raw(fn)
+    pickle.dump(label_to_wallets, open("truth/extracted.pickle","wb"))
     with open("truth/extracted.txt", "w") as f:
         for person in label_to_wallets:
             f.write("{} : {}\n".format(person, label_to_wallets[person]))
