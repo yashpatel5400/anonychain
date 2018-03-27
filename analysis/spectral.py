@@ -126,16 +126,12 @@ def spectral_analysis(G, k=None, normalize=True):
         if len(partitions) >= k:
             break
 
-        print(best_partition)
-
         new_partitions = _partition_graph(partitions[best_partition], partition_eigenvector)
         del partitions[best_partition] 
         
         if len(partitions + new_partitions) > k:
             new_partitions = [nx.compose(new_partitions[0], new_partitions[1]), new_partitions[2]]
         partitions += new_partitions
-
-        print([partition.nodes() for partition in partitions])
     print("Completed partitioning w/ {} partitions".format(k))
     # return partitions
 

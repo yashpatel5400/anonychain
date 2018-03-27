@@ -10,6 +10,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import sklearn.cluster
 
+import time
 import sys, getopt
 import subprocess
 
@@ -135,7 +136,11 @@ def main(argv):
                 if alg_name in to_run:
                     algorithm, args, kwds = algorithms[alg_name]
                     print("Running {} partitioning...".format(alg_name))
+
+                    start = time.time()
                     partitions = cluster_analysis(S, algorithm, args, kwds)
+                    end = time.time()
+                    print("{} time elapsed (s): {}".format(alg_name, end - start))
                     
                     print("{} accuracy: {}".format(alg_name, 
                         calc_accuracy(clusters, partitions)))
