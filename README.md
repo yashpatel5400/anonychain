@@ -12,6 +12,19 @@ All the setup is handled in downloading the appropriate _Python 3_ packages with
 sudo pip3 install -r requirements.txt
 ```
 
+Repository Directory Layout
+=====================
+For further contributions to the project, the following are high-level descriptions of each of the directories in the repo:
+
+- analysis: Where all the clustering code and other analysis (i.e. PCA) code is located. All functionality of further clustering (_assuming_ preprocessing) should be located here
+- blockchain: All code related to reading/converting the raw BTC tx graph data
+- coarsen: Where all the graph coarsening code is located
+- output: Folder where all results are dumped (visualizations, text, binary pickles)
+- setup: Setup for _exclusively_ the testing (any setup for the _full_ runs should be located in the blockchain/ directory). This is where SBM is defined and similar extensions implemented
+- sparsify: Where all the graph sparsification (edges) are located
+- truth: Code to reformat and analyze the performance of clustering runs given some ground truth
+- visualize: Visualization code (largely deprecated)
+
 Documentation
 =====================
 There are two main modes of running the code: one for running a single SBM test (stochastic block model: [https://arxiv.org/pdf/1703.10146.pdf](https://arxiv.org/pdf/1703.10146.pdf)) and another for running many in succession to get aggregate accuracy results.
