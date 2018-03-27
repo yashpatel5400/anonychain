@@ -14,10 +14,9 @@ import matplotlib.pyplot as plt
 
 from setup.sbm import create_sbm, create_clusters
 from analysis.pca import plot_pca
-from analysis.deanonymize import draw_partitions, calc_accuracy, deanonymize
-from blockchain.read import create_simple_graph
+from analysis.deanonymize import draw_results, calc_accuracy, deanonymize
 
-def _contract_edges(G, num_edges):
+def contract_edges(G, num_edges):
     """Given a graph G and a desired number of edges to be contracted, contracts edges
     uniformly at random (non-mutating of the original graph). Edges are contracted such
     that the two endpoints are now "identified" with one another. This mapping is returned
@@ -35,7 +34,7 @@ def _contract_edges(G, num_edges):
         G = nx.contracted_edge(G, random_edge)
     return G, identified_nodes
 
-def _reconstruct_contracted(identified_nodes, partitions):
+def reconstruct_contracted(identified_nodes, partitions):
     """Given the node identifications from the original graph contraction and the 
     partitions formed on the contracted graph, creates partitions on the original graph
     by associating the contracted nodes with the partitions of their "partners"
@@ -69,11 +68,11 @@ def contract_deanonymize(G, k, to_contract, to_plot=False):
     Returns (1) hierarchical partitions (list of lists of ints); 
     (2) kmeans partitions (list of lists of ints)
     """
-    contracted_G, identified_nodes = _contract_edges(G, num_edges=to_contract)
+    contracted_G, identified_nodes = contract_edges(G, num_edges=to_contract)
 
     hier_partitions, kmeans_partitions = deanonymize(contracted_G, k=k)
-    hier_partitions   = _reconstruct_contracted(identified_nodes, hier_partitions)
-    kmeans_partitions = _reconstruct_contracted(identified_nodes, kmeans_partitions)
+    hier_partitions   = reconstruct_contracted(identified_nodes, hier_partitions)
+    kmeans_partitions = reconstruct_contracted(identified_nodes, kmeans_partitions)
 
     if to_plot:
         print("Plotting graphs...")
