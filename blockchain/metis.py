@@ -54,4 +54,4 @@ def metis_from_pickle(fn, num_partitions):
     return run_metis(metis_fn, num_partitions)
 
 if __name__ == "__main__":
-    metis_partition("data_0.000000", num_partitions=25)
+    metis_from_pickle("data_0.000005", num_partitions=25)

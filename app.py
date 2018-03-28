@@ -4,6 +4,7 @@ __name__   = app.py
 __description__ = Main file for creating test SBM models and running clustering
 """
 
+import numpy as np
 import networkx as nx
 import matplotlib
 matplotlib.use('Agg')
@@ -63,7 +64,7 @@ def _cmd_graph(argv):
             --gc <graph_coarsen> [(0,1) percent of nodes to be coarsened (default 0)]
             --lib                [('matplotlib','plotly') for plotting library]"""
 
-    opts, args = getopt.getopt(argv,"hr:b:d:w:c:n:g:p:q:",['lib=','cs=','gc='])
+    opts, args = getopt.getopt(argv,"hr:b:d:w:c:n:g:p:q:m:",['lib=','cs=','gc='])
     for opt, arg in opts:
         if opt in ('-h'):
             print(USAGE_STRING)
@@ -122,11 +123,27 @@ def main(argv):
         weigh_edges = False
         draw_results(G, spring_pos, clusters, "truth.png", weigh_edges=weigh_edges)
 
-        if params["guess_clusters"]:
-            hier_partitions, kmeans_partitions = deanonymize(G, k=None)
-        else:
+        if params["graph_coarsen"] is not None:
             num_clusters = len(clusters)
-            hier_partitions, kmeans_partitions = deanonymize(G, k=num_clusters)
+            to_contract = int(len(G.edges) * params["graph_coarsen"])
+            contracted_G, identified_nodes = contract_edges(G, num_edges=to_contract)
+            contracted_spring_pos = nx.spring_layout(contracted_G)
+
+            hier_partitions, kmeans_partitions = deanonymize(contracted_G, k=num_clusters)
+
+            draw_results(contracted_G, contracted_spring_pos, hier_partitions, 
+                "ManualHierarchical_contracted.png", weigh_edges=weigh_edges)
+            draw_results(contracted_G, contracted_spring_pos, kmeans_partitions, 
+                "ManualKmeans_contracted.png", weigh_edges=weigh_edges)
+
+            hier_partitions   = reconstruct_contracted(identified_nodes, hier_partitions)
+            kmeans_partitions = reconstruct_contracted(identified_nodes, kmeans_partitions)
+        else:
+            if params["guess_clusters"]:
+                hier_partitions, kmeans_partitions = deanonymize(G, k=None)
+            else:
+                num_clusters = len(clusters)
+                hier_partitions, kmeans_partitions = deanonymize(G, k=num_clusters)
 
         print("Manual hierarchical accuracy: {}".format(
             calc_accuracy(clusters, hier_partitions)))
@@ -142,20 +159,31 @@ def main(argv):
             algorithms = get_algorithms(num_clusters)
 
             if params["graph_coarsen"] is not None:
-                to_contract = int(len(G.edges) * params["graph_coarsen"])
-                contracted_G, identified_nodes = contract_edges(G, num_edges=to_contract)
-                contracted_spring_pos = nx.spring_layout(contracted_G)
                 S = nx.adjacency_matrix(contracted_G)
 
-                hier_partitions, kmeans_partitions = deanonymize(contracted_G, k=num_clusters)
-                draw_results(contracted_G, contracted_spring_pos, hier_partitions, 
-                    "ManualHierarchical_contracted.png", weigh_edges=weigh_edges)
-                draw_results(contracted_G, contracted_spring_pos, kmeans_partitions, 
-                    "ManualKmeans_contracted.png", weigh_edges=weigh_edges)
+                # S = np.array([
+                #     [0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                #     [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                #     [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                #     [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                #     [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                #     [0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                #     [0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                #     [0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                #     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                #     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                #     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0],
+                #     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0],
+                #     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+                #     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0],
+                #     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0],
+                #     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0],
+                #     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0],
+                #     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                #     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]])
 
             else:
                 S = nx.adjacency_matrix(G)
-                print(type(S))
         
             if params["run_metis"]:
                 metis_fn = "output/test_metis.graph"

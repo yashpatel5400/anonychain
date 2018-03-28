@@ -22,7 +22,8 @@ def get_algorithms(num_clusters):
         "SpectralClustering": (sklearn.cluster.SpectralClustering, (), {
             'n_clusters' : num_clusters,
             'n_jobs' : -1,
-            'affinity' : 'rbf'
+            'affinity' : 'rbf',
+            'assign_labels' : 'discretize'
         }),
         
         "AffinityPropagation": (sklearn.cluster.AffinityPropagation, (), {
