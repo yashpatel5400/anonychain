@@ -1,4 +1,5 @@
 *.graph
+*.part.*
 *.csv
 *.txt
 *.html

@@ -27,7 +27,7 @@ def format_metis(S, metis_fn):
         for i in range(rows):
             cur_node = []
             for j in range(cols):
-                if S[i,j] > 0: 
+                if S[i,j] > 0:
                     cur_node.append("{} {}".format(j+1, int(S[i,j])))
             f.write("{}\n".format(" ".join(cur_node)))
 
