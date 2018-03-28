@@ -11,6 +11,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import sklearn.cluster
 
+import pickle
 import time
 import sys, getopt
 import subprocess
@@ -24,6 +25,8 @@ from blockchain.read import get_data
 from blockchain.metis import format_metis, run_metis
 from coarsen.contract import contract_edges, reconstruct_contracted
 from algorithms import get_algorithms
+
+DELINEATION = "**********************************************************************"
 
 def _cmd_graph(argv):
     """Parses arguments as specified by argv and returns as a dictionary. Entries
@@ -160,34 +163,12 @@ def main(argv):
 
             if params["graph_coarsen"] is not None:
                 S = nx.adjacency_matrix(contracted_G)
-
-                # S = np.array([
-                #     [0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                #     [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                #     [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                #     [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                #     [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                #     [0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                #     [0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                #     [0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                #     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                #     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                #     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0],
-                #     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0],
-                #     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0],
-                #     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0],
-                #     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0],
-                #     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0],
-                #     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0],
-                #     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                #     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]])
-
             else:
                 S = nx.adjacency_matrix(G)
         
             if params["run_metis"]:
                 metis_fn = "output/test_metis.graph"
-                format_metis(S, metis_fn)
+                format_metis(nx.adjacency_matrix(G), metis_fn)
                 metis_partitions = run_metis(metis_fn, num_clusters)
 
                 print("Metis accuracy: {}".format(calc_accuracy(clusters, metis_partitions)))
@@ -197,6 +178,7 @@ def main(argv):
             for alg_name in algorithms:
                 if alg_name in to_run:
                     algorithm, args, kwds = algorithms[alg_name]
+                    print(DELINEATION)
                     print("Running {} partitioning (coarsened: {})...".format(
                         alg_name, params["graph_coarsen"]))
 
@@ -209,11 +191,11 @@ def main(argv):
                     end = time.time()
 
                     print("{} time elapsed (s): {}".format(alg_name, end - start))
-                    
                     print("{} accuracy: {}".format(alg_name, 
                         calc_accuracy(clusters, partitions)))
                     draw_results(G, spring_pos, partitions, 
                         "{}_guess.png".format(alg_name), weigh_edges=weigh_edges)
+                    print(DELINEATION)
     else:
         num_clusters = params["num_clusters"]
         algorithms = get_algorithms(num_clusters)
