@@ -128,6 +128,9 @@ def _create_similarity(fn, size):
             sequence = chunk[sequence_start:sequence_start+9]
             address1ID, address2ID, heuristic = struct.unpack('iib', sequence)
 
+            if address1ID == address2ID: # ignore extraneous self-loops in data
+                continue
+
             if address1ID not in id_to_index:
                 id_to_index[address1ID] = len(id_to_index)
             if address2ID not in id_to_index:
