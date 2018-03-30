@@ -11,6 +11,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import sklearn.cluster
 
+from collections import defaultdict
 import pickle
 import time
 import sys, getopt
@@ -20,7 +21,7 @@ from prettytable import PrettyTable
 from algorithms import get_algorithms
 from analysis.pca import plot_pca
 from analysis.spectral import spectral_analysis, kmeans_analysis, cluster_analysis
-from analysis.deanonymize import write_results, draw_results, calc_accuracy, deanonymize
+from analysis.deanonymize import write_results, draw_results, calc_accuracy
 from analysis.streaming import create_stream, streaming_analysis
 from blockchain.read import get_data
 from blockchain.metis import format_metis, run_metis
@@ -49,7 +50,8 @@ def _cmd_graph(argv):
 
         "cs"              : None,
         "graph_coarsen"   : None,
-        "lib"             : "matplotlib"
+        "lib"             : "matplotlib",
+        "multi_run"       : 1
     }
 
     USAGE_STRING = """eigenvalues.py 
@@ -66,9 +68,10 @@ def _cmd_graph(argv):
             
             --cs <cluster_sizes> [(int list) size of each cluster (comma delimited)]
             --gc <graph_coarsen> [(0,1) percent of nodes to be coarsened (default 0)]
-            --lib                [('matplotlib','plotly') for plotting library]"""
+            --lib                [('matplotlib','plotly') for plotting library]
+            --mr                 [(int) indicates how many trials to be run in testing]"""
 
-    opts, args = getopt.getopt(argv,"hr:b:d:w:c:n:g:p:q:m:",['lib=','cs=','gc='])
+    opts, args = getopt.getopt(argv,"hr:b:d:w:c:n:g:p:q:m:",['lib=','cs=','gc=','mr='])
     for opt, arg in opts:
         if opt in ('-h'):
             print(USAGE_STRING)
@@ -89,6 +92,7 @@ def _cmd_graph(argv):
         elif opt in ("--cs"):  params["cs"] = arg
         elif opt in ("--gc"):  params["graph_coarsen"] = float(arg)
         elif opt in ("--lib"): params["lib"] = arg
+        elif opt in ("--mr"):  params["multi_run"] = int(arg)
 
     if params["run_test"]:
         if params["cs"] is not None:
@@ -118,10 +122,6 @@ def main(argv):
     
     if params["run_test"]:
         clusters = params["clusters"]
-        G = create_sbm(clusters, params["p"], params["q"], params["weighted"])
-
-        if params["pca"]:
-            plot_pca(G, clusters, plot_2d=True, plot_3d=True, plot_lib=params["lib"])
     else:
         clusters = None
         # change the line below if the remote source of the data is updated
@@ -129,101 +129,110 @@ def main(argv):
         S, index_to_id = get_data(data_src, percent_bytes=params["byte_percent"])
 
     if params["run_test"]:
-        accuracies  = {}
-        timeElapsed = {}
+        accuracies  = defaultdict(lambda: 0.0)
+        timeElapsed = defaultdict(lambda: 0.0)
 
-        spring_pos  = nx.spring_layout(G)
-        weigh_edges = False
-        draw_results(G, spring_pos, clusters, "truth.png", weigh_edges=weigh_edges)
+        for _ in range(params["multi_run"]):
+            G = create_sbm(clusters, params["p"], params["q"], params["weighted"])
+            if params["pca"]:
+                plot_pca(G, clusters, plot_2d=True, plot_3d=True, plot_lib=params["lib"])
 
-        if params["graph_coarsen"] is not None:
-            params_fn = "p-{}_q-{}_gc-{}".format(params["p"], 
-                params["q"], params["graph_coarsen"])
-            num_clusters = len(clusters)
-            to_contract = int(len(G.edges) * params["graph_coarsen"])
-            contracted_G, identified_nodes = contract_edges(G, num_edges=to_contract)
-            contracted_spring_pos = nx.spring_layout(contracted_G)
+            spring_pos  = nx.spring_layout(G)
+            weigh_edges = False
+            draw_results(G, spring_pos, clusters, "truth.png", weigh_edges=weigh_edges)
 
-            start = time.time()
-            hier_cont_partitions = spectral_analysis(G, k=num_clusters)
-            hier_partitions = reconstruct_contracted(identified_nodes, hier_cont_partitions)
-            timeElapsed["ManualHierarchical"] = time.time() - start
-
-            start = time.time()
-            kmeans_cont_partitions = kmeans_analysis(G, k=num_clusters)
-            kmeans_partitions = reconstruct_contracted(identified_nodes, kmeans_cont_partitions)
-            timeElapsed["ManualKmeans"] = time.time() - start
-
-            draw_results(contracted_G, contracted_spring_pos, hier_cont_partitions, 
-                "ManualHierarchical_cont_{}.png".format(params_fn), weigh_edges=weigh_edges)
-            draw_results(contracted_G, contracted_spring_pos, kmeans_cont_partitions, 
-                "ManualKmeans_cont_{}.png".format(params_fn), weigh_edges=weigh_edges)
-            
-        else:
-            params_fn = "p-{}_q-{}".format(params["p"], params["q"])
-            if params["guess_clusters"]:
-                num_clusters = None
-            else:
+            if params["graph_coarsen"] is not None:
+                params_fn = "p-{}_q-{}_gc-{}".format(params["p"], 
+                    params["q"], params["graph_coarsen"])
                 num_clusters = len(clusters)
-
-            start = time.time()
-            hier_partitions = spectral_analysis(G, k=num_clusters)
-            timeElapsed["ManualHierarchical"] = time.time() - start
-
-            start = time.time()
-            kmeans_partitions = kmeans_analysis(G, k=num_clusters)
-            timeElapsed["ManualKmeans"] = time.time() - start
-
-        accuracies["ManualHierarchical"] = calc_accuracy(clusters, hier_partitions)
-        accuracies["ManualKmeans"]       = calc_accuracy(clusters, kmeans_partitions)
-        
-        draw_results(G, spring_pos, hier_partitions, 
-            "ManualHierarchical_{}.png".format(params_fn), weigh_edges=weigh_edges)
-        draw_results(G, spring_pos, kmeans_partitions, 
-            "ManualKmeans_{}.png".format(params_fn), weigh_edges=weigh_edges)
-
-        algorithms = get_algorithms(num_clusters)
-        if params["graph_coarsen"] is not None:
-            S = nx.adjacency_matrix(contracted_G)
-        else:
-            S = nx.adjacency_matrix(G)
-        
-        if params["run_metis"]:
-            metis_fn = "output/test_metis.graph"
-            format_metis(nx.adjacency_matrix(G), metis_fn)
-            metis_partitions, time_elapsed = run_metis(metis_fn, num_clusters)
-
-            accuracies["Metis"]  = calc_accuracy(clusters, kmeans_partitions)
-            timeElapsed["Metis"] = time_elapsed
-            draw_results(G, spring_pos, metis_partitions, 
-                "metis_{}.png".format(params_fn), weigh_edges=weigh_edges)
-
-        for alg_name in algorithms:
-            if alg_name in to_run:
-                algorithm, args, kwds = algorithms[alg_name]
-                print(DELINEATION)
-                print("Running {} partitioning (coarsened: {})...".format(
-                    alg_name, params["graph_coarsen"]))
+                to_contract = int(len(G.edges) * params["graph_coarsen"])
+                contracted_G, identified_nodes = contract_edges(G, num_edges=to_contract)
+                contracted_spring_pos = nx.spring_layout(contracted_G)
 
                 start = time.time()
-                if params["graph_coarsen"] is not None:
-                    cont_partitions = cluster_analysis(S, algorithm, args, kwds)
-                    partitions = reconstruct_contracted(identified_nodes, cont_partitions)
+                hier_cont_partitions = spectral_analysis(G, k=num_clusters)
+                hier_partitions = reconstruct_contracted(identified_nodes, hier_cont_partitions)
+                timeElapsed["ManualHierarchical"] += time.time() - start
+
+                start = time.time()
+                kmeans_cont_partitions = kmeans_analysis(G, k=num_clusters)
+                kmeans_partitions = reconstruct_contracted(identified_nodes, kmeans_cont_partitions)
+                timeElapsed["ManualKmeans"] += time.time() - start
+
+                draw_results(contracted_G, contracted_spring_pos, hier_cont_partitions, 
+                    "ManualHierarchical_cont_{}.png".format(params_fn), weigh_edges=weigh_edges)
+                draw_results(contracted_G, contracted_spring_pos, kmeans_cont_partitions, 
+                    "ManualKmeans_cont_{}.png".format(params_fn), weigh_edges=weigh_edges)
+                
+            else:
+                params_fn = "p-{}_q-{}".format(params["p"], params["q"])
+                if params["guess_clusters"]:
+                    num_clusters = None
                 else:
-                    partitions = cluster_analysis(S, algorithm, args, kwds)
-                end = time.time()
+                    num_clusters = len(clusters)
 
-                if params["graph_coarsen"] is not None:
-                    draw_results(contracted_G, contracted_spring_pos, cont_partitions, 
-                        "{}_contracted_{}.png".format(alg_name, params_fn), 
-                        weigh_edges=weigh_edges)
+                start = time.time()
+                hier_partitions = spectral_analysis(G, k=num_clusters)
+                timeElapsed["ManualHierarchical"] += time.time() - start
 
-                accuracies[alg_name]  = calc_accuracy(clusters, partitions)
-                timeElapsed[alg_name] = end - start
-                draw_results(G, spring_pos, partitions, 
-                    "{}_{}.png".format(alg_name, params_fn), weigh_edges=weigh_edges)
-                print(DELINEATION)
+                start = time.time()
+                kmeans_partitions = kmeans_analysis(G, k=num_clusters)
+                timeElapsed["ManualKmeans"] += time.time() - start
+
+            accuracies["ManualHierarchical"] += calc_accuracy(clusters, hier_partitions)
+            accuracies["ManualKmeans"]       += calc_accuracy(clusters, kmeans_partitions)
+            
+            draw_results(G, spring_pos, hier_partitions, 
+                "ManualHierarchical_{}.png".format(params_fn), weigh_edges=weigh_edges)
+            draw_results(G, spring_pos, kmeans_partitions, 
+                "ManualKmeans_{}.png".format(params_fn), weigh_edges=weigh_edges)
+
+            algorithms = get_algorithms(num_clusters)
+            if params["graph_coarsen"] is not None:
+                S = nx.adjacency_matrix(contracted_G)
+            else:
+                S = nx.adjacency_matrix(G)
+            
+            if params["run_metis"]:
+                metis_fn = "output/test_metis.graph"
+                format_metis(nx.adjacency_matrix(G), metis_fn)
+                metis_partitions, time_elapsed = run_metis(metis_fn, num_clusters)
+
+                accuracies["Metis"]  += calc_accuracy(clusters, kmeans_partitions)
+                timeElapsed["Metis"] += time_elapsed
+                draw_results(G, spring_pos, metis_partitions, 
+                    "Metis_{}.png".format(params_fn), weigh_edges=weigh_edges)
+
+            for alg_name in algorithms:
+                if alg_name in to_run:
+                    algorithm, args, kwds = algorithms[alg_name]
+                    print(DELINEATION)
+                    print("Running {} partitioning (coarsened: {})...".format(
+                        alg_name, params["graph_coarsen"]))
+
+                    start = time.time()
+                    if params["graph_coarsen"] is not None:
+                        cont_partitions = cluster_analysis(S, algorithm, args, kwds)
+                        partitions = reconstruct_contracted(identified_nodes, cont_partitions)
+                    else:
+                        partitions = cluster_analysis(S, algorithm, args, kwds)
+                    end = time.time()
+
+                    if params["graph_coarsen"] is not None:
+                        draw_results(contracted_G, contracted_spring_pos, cont_partitions, 
+                            "{}_contracted_{}.png".format(alg_name, params_fn), 
+                            weigh_edges=weigh_edges)
+
+                    accuracies[alg_name]  += calc_accuracy(clusters, partitions)
+                    timeElapsed[alg_name] += end - start
+                    draw_results(G, spring_pos, partitions, 
+                        "{}_{}.png".format(alg_name, params_fn), weigh_edges=weigh_edges)
+                    print(DELINEATION)
         
+        for alg_name in accuracies.keys():
+            accuracies[alg_name]  /= params["multi_run"]
+            timeElapsed[alg_name] /= params["multi_run"]
+
         _pretty_print(accuracies,  ["algorithm","accuracy"])
         _pretty_print(timeElapsed, ["algorithm","time (s)"])
 
