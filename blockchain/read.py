@@ -204,6 +204,7 @@ def get_data(data_src, percent_bytes=None):
 
             download_command = "curl https://s3.amazonaws.com/bitcoinclustering/cluster_data.dat " \
                 "| head -c {} > {}".format(num_bytes, fn)
+            print(download_command)
             subprocess.run(download_command, shell=True)        
 
         id_to_index = _map_id_to_index(fn)
@@ -224,4 +225,6 @@ def write_csv(S):
                 f.write("{},{},unweighted,{}\n".format(i,j,S[i,j]))      
 
 if __name__ == "__main__":
-    G = create_visual_json("blockchain/data")
+    data_src = "https://s3.amazonaws.com/bitcoinclustering/cluster_data.dat"
+    percent_bytes = 0.00005
+    get_data(data_src, percent_bytes)
