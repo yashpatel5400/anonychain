@@ -111,22 +111,3 @@ def calc_accuracy(truth, guess):
             total_nodes += len(truth[i])
         return 100.0 * (num_correct/total_nodes)
     return 0.0
-
-def _timed_clustering(alg_name, alg_fn, G, k):
-    start = time.time()
-    partitions = alg_fn(G, k=k)
-    end = time.time()
-    print("{} time elapsed (s): {}".format(alg_name, end - start))
-    return partitions
-
-def deanonymize(G, k):
-    """Given the input graph G and number of clusters k, runs hierarchical and k-means clustering
-    to produce partitions. Returns these partitions as lists of sets of ints
-
-    Returns (1) Partitions from hierarchical clustering
-    (2) Partitions from k-means clustering
-    """
-    print("Running partitioning analyses on graph...")
-    hier_partitions   = _timed_clustering("Hierarchical", spectral_analysis, G, k)
-    kmeans_partitions = _timed_clustering("Spectral K-means", kmeans_analysis, G, k)
-    return hier_partitions, kmeans_partitions
