@@ -14,7 +14,8 @@ import matplotlib.pyplot as plt
 
 from setup.sbm import create_sbm, create_clusters
 from analysis.pca import plot_pca
-from analysis.deanonymize import draw_results, calc_accuracy, deanonymize
+from analysis.deanonymize import draw_results, calc_accuracy
+from analysis.spectral import spectral_analysis, kmeans_analysis
 
 def contract_edges(G, num_edges):
     """Given a graph G and a desired number of edges to be contracted, contracts edges
@@ -70,7 +71,9 @@ def contract_deanonymize(G, k, to_contract, to_plot=False):
     """
     contracted_G, identified_nodes = contract_edges(G, num_edges=to_contract)
 
-    hier_partitions, kmeans_partitions = deanonymize(contracted_G, k=k)
+    hier_partitions = spectral_analysis(contracted_G, k=k)
+    hier_partitions = kmeans_analysis(contracted_G, k=k)
+    
     hier_partitions   = reconstruct_contracted(identified_nodes, hier_partitions)
     kmeans_partitions = reconstruct_contracted(identified_nodes, kmeans_partitions)
 
