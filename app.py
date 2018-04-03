@@ -263,6 +263,4 @@ def main(argv):
             metis_partitions = metis_from_pickle(metis_fn, num_clusters)
 
 if __name__ == "__main__":
-    # print("Cleaning up directories...")
-    # subprocess.call("./clean.sh", shell=True)
     main(sys.argv[1:])
