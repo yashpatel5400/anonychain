@@ -6,6 +6,7 @@ to see performance in hierarchical clustering vs. k-means. Does tests over
 various values of p, q, and cluster sizes
 """
 
+import os
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
@@ -99,9 +100,20 @@ def conduct_tests(ps, qs, css):
                 plt.close()
 
 def main():
-    ps = [0.6, 0.7, 0.8, 0.9, 1.0]
-    qs = [0.0, 0.1, 0.2]
-    for p in ps:
+    files = os.listdir("output")
+    results = [file for file in files if file.split("_")[0] == "results"
+        and file.split(".")[-1] == "txt"]
+    p_to_qs = {}
+    for result in results:
+        params = result.split("_")
+        p = float(params[1].split("-")[1])
+        q = float(params[2].split("-")[1].split(".txt")[0])
+        if p not in p_to_qs:
+            p_to_qs[p] = []
+        p_to_qs[p].append(q)
+
+    for p in p_to_qs:
+        qs = p_to_qs[p]
         accuracies, times = extract_results(p, qs)
         graph_results("accuracies", accuracies, p, qs)
         graph_results("times", times, p, qs)
