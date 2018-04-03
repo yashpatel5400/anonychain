@@ -102,11 +102,12 @@ def _cmd_graph(argv):
         params["clusters"] = create_clusters(params["cluster_sizes"])
     return params
 
-def _pretty_print(d, header):
+def _pretty_format(d, header):
     t = PrettyTable(header)
-    for key, val in d.items():
-       t.add_row([key, val])
-    print(t)
+    sorted_keys = sorted(d.keys())
+    for key in sorted_keys:
+       t.add_row([key, d[key]])
+    return str(t)
 
 def main(argv):
     """Main application method that parses command line arguments and runs hierarchical
@@ -137,10 +138,7 @@ def main(argv):
             if params["pca"]:
                 plot_pca(G, clusters, plot_2d=True, plot_3d=True, plot_lib=params["lib"])
 
-            spring_pos  = nx.spring_layout(G)
             weigh_edges = False
-            draw_results(G, spring_pos, clusters, "truth.png", weigh_edges=weigh_edges)
-
             if params["graph_coarsen"] is not None:
                 params_fn = "p-{}_q-{}_gc-{}".format(params["p"], 
                     params["q"], params["graph_coarsen"])
@@ -182,6 +180,9 @@ def main(argv):
             accuracies["ManualHierarchical"] += calc_accuracy(clusters, hier_partitions)
             accuracies["ManualKmeans"]       += calc_accuracy(clusters, kmeans_partitions)
             
+            spring_pos  = nx.spring_layout(G)
+            draw_results(G, spring_pos, clusters, 
+                "truth_{}.png".format(params_fn), weigh_edges=weigh_edges)
             draw_results(G, spring_pos, hier_partitions, 
                 "ManualHierarchical_{}.png".format(params_fn), weigh_edges=weigh_edges)
             draw_results(G, spring_pos, kmeans_partitions, 
@@ -233,8 +234,10 @@ def main(argv):
             accuracies[alg_name]  /= params["multi_run"]
             timeElapsed[alg_name] /= params["multi_run"]
 
-        _pretty_print(accuracies,  ["algorithm","accuracy"])
-        _pretty_print(timeElapsed, ["algorithm","time (s)"])
+        with open("output/results_{}.txt".format(params_fn),"w") as f:
+            f.write(_pretty_format(accuracies,  ["algorithm","accuracy"]))
+            f.write("\n")
+            f.write(_pretty_format(timeElapsed, ["algorithm","time (s)"]))
 
     else:
         num_clusters = params["num_clusters"]
@@ -260,6 +263,6 @@ def main(argv):
             metis_partitions = metis_from_pickle(metis_fn, num_clusters)
 
 if __name__ == "__main__":
-    print("Cleaning up directories...")
-    subprocess.call("./clean.sh", shell=True)
+    # print("Cleaning up directories...")
+    # subprocess.call("./clean.sh", shell=True)
     main(sys.argv[1:])

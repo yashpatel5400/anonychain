@@ -11,8 +11,49 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+import plotly
+import plotly.graph_objs as go
+
 from setup.sbm import create_sbm, create_clusters
-from analysis.deanonymize import calc_accuracy, deanonymize
+# from analysis.deanonymize import calc_accuracy, deanonymize
+
+def extract_results(p, qs):
+    alg_accuracies, alg_times = {}, {} 
+    for q in qs:
+        fn = "output/results_p-{}_q-{}.txt".format(p, q)
+        lines = open(fn, "r").readlines()
+        accuracies, times = lines[3:9], lines[13:19]
+        for accuracy in accuracies:
+            values = accuracy.split("|")
+            alg_name, alg_accuracy = values[1].strip(), float(values[2].strip())
+            if alg_name not in alg_accuracies:
+                alg_accuracies[alg_name] = []
+            alg_accuracies[alg_name].append(alg_accuracy)
+
+        for time in times:
+            values = time.split("|")
+            alg_name, alg_time = values[1].strip(), float(values[2].strip())
+            if alg_name not in alg_times:
+                alg_times[alg_name] = []
+            alg_times[alg_name].append(alg_time)
+
+    return alg_accuracies, alg_times
+
+def graph_results(fn, d, p, qs):
+    data = []
+    for alg in d:
+        data.append(go.Scatter(
+            x=qs,
+            y=d[alg],
+            name=alg
+        ))
+
+    layout = dict(
+        xaxis = dict(title = 'qs'),
+        yaxis = dict(title = fn),
+    )
+    fig = dict(data=data, layout=layout)
+    plotly.offline.plot(fig, filename='output/results_{}-{}.html'.format(fn, p))
 
 def conduct_tests(ps, qs, css):
     """Given lists of p probabilities, q probabilities, and lists of cluster sizes,
@@ -58,14 +99,13 @@ def conduct_tests(ps, qs, css):
                 plt.close()
 
 def main():
-    ps  = [i / 10 for i in range(10)]
-    qs  = [i / 10 for i in range(10)]
+    ps = [0.6, 0.7, 0.8, 0.9, 1.0]
+    qs = [0.0, 0.1, 0.2]
+    for p in ps:
+        accuracies, times = extract_results(p, qs)
+        graph_results("accuracies", accuracies, p, qs)
+        graph_results("times", times, p, qs)
+        print("Finished graphing p={}".format(p))
 
-    css = [
-        [5,4,3,2]
-    ]
-
-    conduct_tests(ps, qs, css)
-    
 if __name__ == "__main__":
     main()
