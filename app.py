@@ -21,7 +21,7 @@ from prettytable import PrettyTable
 from algorithms import get_algorithms
 from analysis.pca import plot_pca
 from analysis.spectral import spectral_analysis, kmeans_analysis, cluster_analysis
-from analysis.deanonymize import write_results, draw_results, calc_accuracy
+from analysis.deanonymize import write_results, draw_results, calc_accuracy, calc_accuracies
 from analysis.streaming import create_stream, streaming_analysis
 from blockchain.read import get_data
 from blockchain.metis import format_metis, run_metis
@@ -109,6 +109,12 @@ def _pretty_format(d, header):
        t.add_row([key, d[key]])
     return str(t)
 
+def _update_accuracies(updates, purity, nmi, rand_ind, weighted_rand_ind, alg_name):
+    purity[alg_name]            += updates["purity"]
+    nmi[alg_name]               += updates["nmi"]
+    rand_ind[alg_name]          += updates["rand_ind"]
+    weighted_rand_ind[alg_name] += updates["weighted_rand_ind"]
+
 def main(argv):
     """Main application method that parses command line arguments and runs hierarchical
     and kmeans clustering. CMD-line arguments are specified in the help menu (run with -h).
@@ -130,8 +136,13 @@ def main(argv):
         S, index_to_id = get_data(data_src, percent_bytes=params["byte_percent"])
 
     if params["run_test"]:
-        accuracies  = defaultdict(lambda: 0.0)
-        timeElapsed = defaultdict(lambda: 0.0)
+        purity            = defaultdict(lambda: 0.0)
+        nmi               = defaultdict(lambda: 0.0)
+        rand_ind          = defaultdict(lambda: 0.0)
+        weighted_rand_ind = defaultdict(lambda: 0.0)
+        accuracy_measures = [("purity",purity), ("nmi",nmi), 
+            ("rand_ind",rand_ind), ("weighted_rand_ind",weighted_rand_ind)]
+        timeElapsed       = defaultdict(lambda: 0.0)
 
         for _ in range(params["multi_run"]):
             G = create_sbm(clusters, params["p"], params["q"], params["weighted"])
@@ -177,8 +188,10 @@ def main(argv):
                 kmeans_partitions = kmeans_analysis(G, k=num_clusters)
                 timeElapsed["ManualKmeans"] += time.time() - start
 
-            accuracies["ManualHierarchical"] += calc_accuracy(clusters, hier_partitions)
-            accuracies["ManualKmeans"]       += calc_accuracy(clusters, kmeans_partitions)
+            _update_accuracies(calc_accuracies(clusters, hier_partitions), 
+                purity, nmi, rand_ind, weighted_rand_ind, "ManualHierarchical")
+            _update_accuracies(calc_accuracies(clusters, kmeans_partitions), 
+                purity, nmi, rand_ind, weighted_rand_ind, "ManualKmeans")
             
             spring_pos  = nx.spring_layout(G)
             draw_results(G, spring_pos, clusters, 
@@ -199,7 +212,9 @@ def main(argv):
                 format_metis(nx.adjacency_matrix(G), metis_fn)
                 metis_partitions, time_elapsed = run_metis(metis_fn, num_clusters)
 
-                accuracies["Metis"]  += calc_accuracy(clusters, kmeans_partitions)
+                _update_accuracies(calc_accuracies(clusters, metis_partitions), 
+                    purity, nmi, rand_ind, weighted_rand_ind, "Metis")
+
                 timeElapsed["Metis"] += time_elapsed
                 draw_results(G, spring_pos, metis_partitions, 
                     "Metis_{}.png".format(params_fn), weigh_edges=weigh_edges)
@@ -224,20 +239,22 @@ def main(argv):
                             "{}_contracted_{}.png".format(alg_name, params_fn), 
                             weigh_edges=weigh_edges)
 
-                    accuracies[alg_name]  += calc_accuracy(clusters, partitions)
+                    _update_accuracies(calc_accuracies(clusters, partitions), 
+                        purity, nmi, rand_ind, weighted_rand_ind, alg_name)
                     timeElapsed[alg_name] += end - start
                     draw_results(G, spring_pos, partitions, 
                         "{}_{}.png".format(alg_name, params_fn), weigh_edges=weigh_edges)
                     print(DELINEATION)
         
-        for alg_name in accuracies.keys():
-            accuracies[alg_name]  /= params["multi_run"]
-            timeElapsed[alg_name] /= params["multi_run"]
+        for accuracy_name, accuracies in accuracy_measures:
+            for alg_name in accuracies.keys():
+                accuracies[alg_name]  /= params["multi_run"]
+                timeElapsed[alg_name] /= params["multi_run"]
 
-        with open("output/results_{}.txt".format(params_fn),"w") as f:
-            f.write(_pretty_format(accuracies,  ["algorithm","accuracy"]))
-            f.write("\n")
-            f.write(_pretty_format(timeElapsed, ["algorithm","time (s)"]))
+            with open("output/{}_{}.txt".format(accuracy_name, params_fn),"w") as f:
+                f.write(_pretty_format(accuracies,  ["algorithm","accuracy"]))
+                f.write("\n")
+                f.write(_pretty_format(timeElapsed, ["algorithm","time (s)"]))
 
     else:
         num_clusters = params["num_clusters"]
