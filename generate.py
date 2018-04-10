@@ -18,13 +18,14 @@ def generate(in_fn="tests.txt",out_fn="tests.sh"):
             if len(params) != 4:
                 continue
 
-            p, q, mr, cs = params
+            p, qs, mr, cs = params
             p  = float(p.strip())
-            q  = float(q.strip())
+            qs = [float(q.strip()) for q in qs.split(",")]
             mr = int(mr.strip())
             cs = cs.replace(" ", "")
 
-            output_lines.append(template.format(p,q,mr,cs))
+            for q in qs:
+                output_lines.append(template.format(p,q,mr,cs))
     
     with open(out_fn, "w") as f:
         f.writelines(output_lines)
