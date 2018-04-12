@@ -113,7 +113,7 @@ def _update_accuracies(updates, purity, nmi, rand_ind, weighted_rand_ind, alg_na
     purity[alg_name]            += updates["purity"]
     nmi[alg_name]               += updates["nmi"]
     rand_ind[alg_name]          += updates["rand_ind"]
-    weighted_rand_ind[alg_name] += updates["weighted_rand_ind"]
+    weighted_rand_ind[alg_name] += updates["weighted_ri"]
 
 def main(argv):
     """Main application method that parses command line arguments and runs hierarchical
@@ -141,7 +141,7 @@ def main(argv):
         rand_ind          = defaultdict(lambda: 0.0)
         weighted_rand_ind = defaultdict(lambda: 0.0)
         accuracy_measures = [("purity",purity), ("nmi",nmi), 
-            ("rand_ind",rand_ind), ("weighted_rand_ind",weighted_rand_ind)]
+            ("rand_ind",rand_ind), ("weighted_ri",weighted_rand_ind)]
         timeElapsed       = defaultdict(lambda: 0.0)
 
         for _ in range(params["multi_run"]):
