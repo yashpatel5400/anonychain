@@ -18,10 +18,10 @@ import plotly.graph_objs as go
 from setup.sbm import create_sbm, create_clusters
 # from analysis.deanonymize import calc_accuracy, deanonymize
 
-def extract_results(p, qs):
+def extract_results(accuracy_metric, p, qs):
     alg_accuracies, alg_times = {}, {} 
     for q in qs:
-        fn = "output/results_p-{}_q-{}.txt".format(p, q)
+        fn = "output/{}_p-{}_q-{}.txt".format(accuracy_metric, p, q)
         lines = open(fn, "r").readlines()
         accuracies, times = lines[3:9], lines[13:19]
         for accuracy in accuracies:
@@ -101,23 +101,27 @@ def conduct_tests(ps, qs, css):
 
 def main():
     files = os.listdir("output")
-    results = [file for file in files if file.split("_")[0] == "results"
-        and file.split(".")[-1] == "txt"]
-    p_to_qs = {}
-    for result in results:
-        params = result.split("_")
-        p = float(params[1].split("-")[1])
-        q = float(params[2].split("-")[1].split(".txt")[0])
-        if p not in p_to_qs:
-            p_to_qs[p] = []
-        p_to_qs[p].append(q)
+    accuracy_metrics = ["purity", "nmi", "rand_ind", "weighted_ri"]
 
-    for p in p_to_qs:
-        qs = p_to_qs[p]
-        accuracies, times = extract_results(p, qs)
-        graph_results("accuracies", accuracies, p, qs)
-        graph_results("times", times, p, qs)
-        print("Finished graphing p={}".format(p))
+    for accuracy_metric in accuracy_metrics:
+        results = [file for file in files if len(file.split(accuracy_metric)) > 1
+            and file.split(".")[-1] == "txt"]
+        p_to_qs = {}
+        for result in results:
+            params_txt = result.split(accuracy_metric)[1]
+            params = params_txt.split("_")
+            p = float(params[1].split("-")[1])
+            q = float(params[2].split("-")[1].split(".txt")[0])
+            if p not in p_to_qs:
+                p_to_qs[p] = []
+            p_to_qs[p].append(q)
+
+        for p in p_to_qs:
+            qs = p_to_qs[p]
+            accuracies, times = extract_results(accuracy_metric, p, qs)
+            graph_results(accuracy_metric, accuracies, p, qs)
+            graph_results("times", times, p, qs)
+            print("Finished graphing {} for p={}".format(accuracy_metric, p))
 
 if __name__ == "__main__":
     main()
