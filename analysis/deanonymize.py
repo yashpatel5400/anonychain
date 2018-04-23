@@ -126,7 +126,7 @@ def calc_accuracies(truth, guess):
         "purity"            : calc_purity(truth, guess),
         "nmi"               : calc_nmi(truth, guess),
         "rand_ind"          : calc_rand_ind(truth, guess),
-        "weighted_ri" : calc_rand_ind(truth, guess, beta=1.5),   
+        "weighted_ri" : calc_rand_ind(truth, guess, beta=0.5),   
     }
 
 def calc_purity(truth, guess):

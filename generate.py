@@ -10,7 +10,7 @@ def generate(in_fn="tests.txt",out_fn="tests.sh"):
     if not os.path.isfile(in_fn):
         print("No test file found! Exiting now...")
 
-    template = "python3 app.py -r y -p {} -q {} --mr {} --cs {}"
+    template = "python3 app.py -r y -p {} -q {} --mr {} --cs {}\n"
     output_lines = []
     with open(in_fn, "r") as f:
         for line in f:
