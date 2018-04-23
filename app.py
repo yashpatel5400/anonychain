@@ -161,8 +161,7 @@ def main(argv):
                 # contracted_G, identified_nodes = contract_edges(G, num_edges=to_contract)
                 contracted_G, identified_nodes = contract_edges_matching(G, 
                     num_iters=params["graph_coarsen"])
-                print(len(G.edges))
-                print(len(contracted_G.edges))
+                print("Edges removed: {}".format(len(G.edges) - len(contracted_G.edges)))
                 
                 start = time.time()
                 hier_cont_partitions = spectral_analysis(G, k=num_clusters)

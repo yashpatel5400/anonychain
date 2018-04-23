@@ -65,10 +65,11 @@ def conduct_tests(ps, qs, css):
                 plt.savefig("output/accuracy/p={}_cs={}_{}.png".format(p, cs, label))
                 plt.close()
 
-def extract_results(accuracy_metric, p, qs):
+def extract_results(accuracy_metric, p, params):
     alg_accuracies, alg_times = {}, {} 
-    for q in qs:
-        fn = "output/{}_p-{}_q-{}.txt".format(accuracy_metric, p, q)
+    for (q,gc,n) in params:
+        fn = "output/{}_p-{}_q-{}_gc-{}_n-{}.txt".format(accuracy_metric, p, q, gc, n)
+        print(fn)
         lines = open(fn, "r").readlines()
         accuracies, times = lines[3:9], lines[13:19]
         for accuracy in accuracies:
@@ -103,12 +104,13 @@ def graph_results(fn, d, p, qs, n, gc=None, save_static=True):
         title = "{} vs. {}".format(xaxis, yaxis)
         out_fn = 'output/results_{}.png'.format(fn)
 
+    sorted_algs = sorted(d.keys())
     if save_static:
         fig = plt.figure(figsize=(12, 8))
         fig.suptitle(title)
 
         ax = fig.add_subplot(111)
-        for alg in d:
+        for alg in sorted_algs:
             plt.plot(qs, d[alg], marker='o', label=alg)
         
         box = ax.get_position()
@@ -143,7 +145,7 @@ def graph_results(fn, d, p, qs, n, gc=None, save_static=True):
 
 def create_collage(width, height, listofimages, output_fn):
     cols = 2
-    rows = 3
+    rows = 5
     thumbnail_width = width//cols
     thumbnail_height = height//rows
     size = thumbnail_width, thumbnail_height
@@ -186,7 +188,7 @@ def main(opt_params):
     for i, accuracy_metric in enumerate(accuracy_metrics):
         results = [file for file in files if len(file.split(accuracy_metric)) > 1
             and file.split(".")[-1] == "txt" and opt_params in file]
-        p_to_qs = {}
+        p_to_params = {}
         for result in results:
             params_txt = result.split(accuracy_metric)[1]
             params = params_txt.split("_")
@@ -198,14 +200,16 @@ def main(opt_params):
                 gc = int(params[3].split("-")[1])
             n = int(params[-1].split("-")[1].split(".txt")[0])
 
-            if p not in p_to_qs:
-                p_to_qs[p] = []
-            p_to_qs[p].append(q)
+            if p not in p_to_params:
+                p_to_params[p] = []
+            p_to_params[p].append((q, gc, n))
 
         result_files = []
-        for p in p_to_qs:
-            sorted_qs = sorted(p_to_qs[p])
-            accuracies, times = extract_results(accuracy_metric, p, sorted_qs)
+        for p in p_to_params:
+            p_to_params[p].sort()
+            sorted_qs = [param[0] for param in p_to_params[p]]
+
+            accuracies, times = extract_results(accuracy_metric, p, p_to_params[p])
             for alg in accuracies:
                 if p not in alg_scores:
                     alg_scores[p] = {}
@@ -217,7 +221,7 @@ def main(opt_params):
             out_result = graph_results(accuracy_metric, accuracies, p, sorted_qs, n, gc)
             result_files.append(out_result)
             print("Finished graphing {} for p={}".format(accuracy_metric, p))
-        # create_collage(1200 * 2,800 * 3,result_files, accuracy_metric)
+        #  create_collage(1200 * 2,800 * 3,result_files, accuracy_metric)
     
     # result_files = []
     # sorted_ps = sorted(alg_scores.keys())
@@ -234,13 +238,29 @@ def main(opt_params):
     # create_collage(1200 * 2,800 * 3,result_files, "overall")
 
 if __name__ == "__main__":
-    main(opt_params="gc-1_n-276")
-    # files = [
-    #     "output/p-0.9_q-0.15/KMeans_p-0.9_q-0.15.png",
-    #     "output/p-0.9_q-0.15/ManualHierarchical_p-0.9_q-0.15.png",
-    #     "output/p-0.9_q-0.15/ManualKmeans_p-0.9_q-0.15.png",
-    #     "output/p-0.9_q-0.15/Metis_p-0.9_q-0.15.png",
-    #     "output/p-0.9_q-0.15/MiniBatchKMeans_p-0.9_q-0.15.png",
-    #     "output/p-0.9_q-0.15/SpectralClustering_p-0.9_q-0.15.png"
-    # ]
-    # create_collage(650 * 2,500 * 3,files, "p-0.9_q-0.15")
+    # main(opt_params="gc-2_n-276")
+    files = [
+        "output/sparsify/spectral_0.5_original.png",
+        "output/sparsify/spectral_1.5_original.png",
+        "output/sparsify/spectral_2.5_original.png",
+        "output/sparsify/spectral_3.5_original.png",
+        "output/sparsify/spectral_4.5_original.png",
+
+        "output/sparsify/spectral_0.5_sparse.png",
+        "output/sparsify/spectral_1.5_sparse.png",
+        "output/sparsify/spectral_2.5_sparse.png",
+        "output/sparsify/spectral_3.5_sparse.png",
+        "output/sparsify/spectral_4.5_sparse.png",
+    ]
+    # files = os.listdir("output/contracted2")
+    # files = sorted(["output/{}".format(file) for file in files])
+    # 
+    # uncontracted = []
+    # contracted = []
+    # for i, file in enumerate(files):
+    #     if i % 2 == 0:
+    #         contracted.append(file)
+    #     else:
+    #         uncontracted.append(file)
+    # files = contracted + uncontracted
+    create_collage(640 * 2,480 * 5,files, "original_vs_sparse")
