@@ -16,7 +16,7 @@ import plotly
 import plotly.graph_objs as go
 from collections import defaultdict
 
-from PIL import Image, ImageFont, ImageDraw
+from PIL import Image, ImageFont, ImageDraw, ImageOps
 from setup.sbm import create_sbm, create_clusters
 # from analysis.deanonymize import calc_accuracy, deanonymize
 
@@ -149,9 +149,11 @@ def create_collage(width, height, listofimages, output_fn):
     for p in listofimages:
         im = Image.open(p)
         
-        draw = ImageDraw.Draw(im)
-        font = ImageFont.truetype(os.path.join(fonts_path, 'Archivo.ttf'), 16)
-        draw.text((0, 0),"Sample Text",(255,255,255),font=font)
+        # draw = ImageDraw.Draw(im)
+        # font = ImageFont.truetype(os.path.join(fonts_path, 'Archivo.ttf'), 16)
+        # 
+        # title = p.split("/")[-1].split("_")[0]
+        # draw.text((50, 50),title,(0,0,0),font=font)
         
         im.thumbnail(size)
         ims.append(im)
@@ -226,11 +228,11 @@ def main():
 if __name__ == "__main__":
     # main()
     files = [
-        "output/p-0.8_q-0.0/KMeans_p-0.8_q-0.0.png",
-        "output/p-0.8_q-0.0/ManualHierarchical_p-0.8_q-0.0.png",
-        "output/p-0.8_q-0.0/ManualKmeans_p-0.8_q-0.0.png",
-        "output/p-0.8_q-0.0/Metis_p-0.8_q-0.0.png",
-        "output/p-0.8_q-0.0/MiniBatchKMeans_p-0.8_q-0.0.png",
-        "output/p-0.8_q-0.0/SpectralClustering_p-0.8_q-0.0.png"
+        "output/p-0.9_q-0.15/KMeans_p-0.9_q-0.15.png",
+        "output/p-0.9_q-0.15/ManualHierarchical_p-0.9_q-0.15.png",
+        "output/p-0.9_q-0.15/ManualKmeans_p-0.9_q-0.15.png",
+        "output/p-0.9_q-0.15/Metis_p-0.9_q-0.15.png",
+        "output/p-0.9_q-0.15/MiniBatchKMeans_p-0.9_q-0.15.png",
+        "output/p-0.9_q-0.15/SpectralClustering_p-0.9_q-0.15.png"
     ]
-    create_collage(1200 * 2,800 * 3,files, "p-0.8_q-0.0")
+    create_collage(650 * 2,500 * 3,files, "p-0.9_q-0.15")
