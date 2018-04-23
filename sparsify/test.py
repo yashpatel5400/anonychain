@@ -32,12 +32,12 @@ def _partition_graph(G, clusters):
     start = time.time()
     hier_partitions = spectral_analysis(G, k=len(clusters))
     hier_accuracies = calc_accuracies(clusters, hier_partitions)
-    hier_accuracies["time"] += time.time() - start
+    hier_accuracies["time"] = time.time() - start
 
     start = time.time()
     kmeans_partitions = kmeans_analysis(G, k=len(clusters))
     kmeans_accuracies = calc_accuracies(clusters, kmeans_partitions)
-    kmeans_accuracies["time"] += time.time() - start
+    kmeans_accuracies["time"] = time.time() - start
     return hier_accuracies, kmeans_accuracies
 
 def _run_test(G, clusters, sparsifier, param, sname):
@@ -56,7 +56,7 @@ def _run_test(G, clusters, sparsifier, param, sname):
     delta_hier = {}
     delta_kmeans = {}
 
-    for accuracy_metric in hier_accuracies:
+    for accuracy_metric in orig_hier_accuracies:
         delta_hier[accuracy_metric] = new_hier_accuracies[accuracy_metric] - \
             orig_hier_accuracies[accuracy_metric]
         delta_kmeans[accuracy_metric] = new_kmeans_accuracies[accuracy_metric] - \
@@ -67,18 +67,25 @@ def _run_test(G, clusters, sparsifier, param, sname):
 def _plot_trial_results(params, hier_deltas, kmeans_deltas, trial_type):
     params = np.array(params)
     for acc_type, deltas in zip(["hierarchical","kmeans"],[hier_deltas,kmeans_deltas]):
-        for accuracy_metric in deltas:
+        metrics = {}
+        for trial in deltas:
+            for accuracy_metric in trial:
+                if accuracy_metric not in metrics:
+                    metrics[accuracy_metric] = []
+                metrics[accuracy_metric].append(trial[accuracy_metric])
+
+        for accuracy_metric in metrics:
             plt.title("Param vs. Drop in {} {}".format(acc_type, accuracy_metric))
             
-            m, b = np.polyfit(params, deltas[accuracy_metric], 1)
-            plt.scatter(params, deltas[accuracy_metric])
+            m, b = np.polyfit(params, metrics[accuracy_metric], 1)
+            plt.scatter(params, metrics[accuracy_metric])
             plt.plot(params, m * params + b, '-')
 
-            plt.savefig("output/sparsify/{}_{}.png".format(acc_type,trial_type))
+            plt.savefig("output/sparsify/{}_{}_{}.png".format(accuracy_metric, acc_type,trial_type))
             plt.close()
 
 def spectral_trial(params):
-    epsilons = np.arange(0.25,5.0,.125)
+    epsilons = np.arange(0.25,10.0,.125)
 
     filtered_epsilons = []
     hier_deltas       = []
@@ -89,11 +96,11 @@ def spectral_trial(params):
             cluster_sizes = [params["cluster_size"]] * params["num_clusters"]
             clusters = create_clusters(cluster_sizes)
             G = create_sbm(clusters, params["p"], params["q"], False)
-            
+                
             spectral_sparsifier = SpectralSparsifier(epsilon=epsilon)
             delta_hier, delta_kmeans = _run_test(G, clusters, 
                 spectral_sparsifier, epsilon, "spectral")
-            
+                
             filtered_epsilons.append(epsilon)
             hier_deltas.append(delta_hier)
             kmeans_deltas.append(delta_kmeans)
@@ -103,7 +110,7 @@ def spectral_trial(params):
     _plot_trial_results(filtered_epsilons,hier_deltas,kmeans_deltas,"spectral")
 
 def sample_trial(params):
-    Cs = np.arange(0.25,10.0,.25)
+    Cs = np.arange(0.25,.50,.25)
 
     filtered_Cs   = []
     hier_deltas   = []
@@ -135,7 +142,7 @@ def main():
     params = {
         "p" : .75,
         "q" : .10,
-        "cluster_size" : 5,
+        "cluster_size" : 10,
         "num_clusters" : 10
     }
     
