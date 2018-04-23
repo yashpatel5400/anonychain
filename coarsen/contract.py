@@ -35,6 +35,24 @@ def contract_edges(G, num_edges):
         G = nx.contracted_edge(G, random_edge, self_loops=False)
     return G, identified_nodes
 
+def contract_edges_matching(G, num_iters=2):
+    """Given a graph G and a desired number of edges to be contracted, contracts edges
+    uniformly at random (non-mutating of the original graph). Edges are contracted such
+    that the two endpoints are now "identified" with one another. This mapping is returned
+    as a dictionary If more edges are provided than can be contracted, an error is thrown. 
+
+    Returns (1) contracted graph (NetworkX Graph); 
+    (2) identified nodes dictionary (NetworkX node -> NetworkX node)
+    """
+    identified_nodes = {}
+    for _ in range(num_iters):
+        edges = list(G.edges)
+        matching = nx.maximal_matching(G)
+        for vertex_pair in matching:
+            identified_nodes[vertex_pair[0]] = vertex_pair[0] # right gets contracted into left
+            G = nx.contracted_edge(G, vertex_pair, self_loops=False)
+    return G, identified_nodes
+
 def reconstruct_contracted(identified_nodes, partitions):
     """Given the node identifications from the original graph contraction and the 
     partitions formed on the contracted graph, creates partitions on the original graph
@@ -69,7 +87,8 @@ def contract_deanonymize(G, k, to_contract, to_plot=False):
     Returns (1) hierarchical partitions (list of lists of ints); 
     (2) kmeans partitions (list of lists of ints)
     """
-    contracted_G, identified_nodes = contract_edges(G, num_edges=to_contract)
+    # contracted_G, identified_nodes = contract_edges(G, num_edges=to_contract)
+    contracted_G, identified_nodes = contract_edges_matching(G, num_iters=2)
 
     hier_partitions = spectral_analysis(contracted_G, k=k)
     hier_partitions = kmeans_analysis(contracted_G, k=k)

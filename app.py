@@ -25,7 +25,7 @@ from analysis.deanonymize import write_results, draw_results, calc_accuracy, cal
 from analysis.streaming import create_stream, streaming_analysis
 from blockchain.read import get_data
 from blockchain.metis import format_metis, run_metis
-from coarsen.contract import contract_edges, reconstruct_contracted
+from coarsen.contract import contract_edges, contract_edges_matching, reconstruct_contracted
 from setup.sbm import create_sbm, create_clusters
 
 DELINEATION = "**********************************************************************"
@@ -67,7 +67,7 @@ def _cmd_graph(argv):
             -w <weighted_graph>  [(y/n) for whether to have weights on edges (randomized)]
             
             --cs <cluster_sizes> [(int list) size of each cluster (comma delimited)]
-            --gc <graph_coarsen> [(0,1) percent of nodes to be coarsened (default 0)]
+            --gc <graph_coarsen> [(int) iterations of matchings found to be coarsened (default 0)]
             --lib                [('matplotlib','plotly') for plotting library]
             --mr                 [(int) indicates how many trials to be run in testing]"""
 
@@ -90,7 +90,7 @@ def _cmd_graph(argv):
         elif opt in ("-q"): params["q"] = float(arg)
         
         elif opt in ("--cs"):  params["cs"] = arg
-        elif opt in ("--gc"):  params["graph_coarsen"] = float(arg)
+        elif opt in ("--gc"):  params["graph_coarsen"] = int(arg)
         elif opt in ("--lib"): params["lib"] = arg
         elif opt in ("--mr"):  params["multi_run"] = int(arg)
 
@@ -124,7 +124,7 @@ def main(argv):
     Returns void
     """
     params = _cmd_graph(argv)
-    produce_figures = False
+    produce_figures = True
 
     # algorithms to be used in the clustering runs (BOTH in testing and full analysis)
     to_run = set(["KMeans","MiniBatchKMeans","SpectralClustering"])
@@ -157,8 +157,12 @@ def main(argv):
                 params_fn = "p-{}_q-{}_gc-{}_n-{}".format(params["p"], 
                     params["q"], params["graph_coarsen"], n)
                 num_clusters = len(clusters)
-                to_contract = int(len(G.edges) * params["graph_coarsen"])
-                contracted_G, identified_nodes = contract_edges(G, num_edges=to_contract)
+
+                # contracted_G, identified_nodes = contract_edges(G, num_edges=to_contract)
+                contracted_G, identified_nodes = contract_edges_matching(G, 
+                    num_iters=params["graph_coarsen"])
+                print(len(G.edges))
+                print(len(contracted_G.edges))
                 
                 start = time.time()
                 hier_cont_partitions = spectral_analysis(G, k=num_clusters)

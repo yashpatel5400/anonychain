@@ -9,11 +9,12 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+import time
 
 from sparsify.spectral import SpectralSparsifier
 from sparsify.sample import SampleSparsifier
 from setup.sbm import create_sbm, create_clusters
-from analysis.deanonymize import calc_accuracy, deanonymize
+from analysis.deanonymize import calc_accuracies, spectral_analysis, kmeans_analysis
 
 def _plot(G, fn):
     """Given an input graph and a filename, plots the graph at the file destination
@@ -28,10 +29,16 @@ def _plot(G, fn):
     plt.close()
 
 def _partition_graph(G, clusters):
-    hier_partitions, kmeans_partitions = deanonymize(G, k=len(clusters))
-    hier_accuracy = calc_accuracy(clusters, hier_partitions)
-    kmeans_accuracy = calc_accuracy(clusters, kmeans_partitions)
-    return hier_accuracy, kmeans_accuracy
+    start = time.time()
+    hier_partitions = spectral_analysis(G, k=len(clusters))
+    hier_accuracies = calc_accuracies(clusters, hier_partitions)
+    hier_accuracies["time"] += time.time() - start
+
+    start = time.time()
+    kmeans_partitions = kmeans_analysis(G, k=len(clusters))
+    kmeans_accuracies = calc_accuracies(clusters, kmeans_partitions)
+    kmeans_accuracies["time"] += time.time() - start
+    return hier_accuracies, kmeans_accuracies
 
 def _run_test(G, clusters, sparsifier, param, sname):
     """Given an input graph, a sparsifier object (API of having a .sparsify(G) function),
@@ -41,30 +48,34 @@ def _run_test(G, clusters, sparsifier, param, sname):
     Returns void
     """
     _plot(G, "{}_{}_original.png".format(sname, param))
-    orig_hier_accuracy, orig_kmeans_accuracy = _partition_graph(G, clusters)
+    orig_hier_accuracies, orig_kmeans_accuracies = _partition_graph(G, clusters)
     sparsifier.sparsify(G)
-    new_hier_accuracy, new_kmeans_accuracy = _partition_graph(G, clusters)
+    new_hier_accuracies, new_kmeans_accuracies = _partition_graph(G, clusters)
     _plot(G, "{}_{}_sparse.png".format(sname, param))
     
-    print("Hierarchical -- Original: {} <=> New: {}".format(
-        orig_hier_accuracy, new_hier_accuracy))
-    print("K-means -- Original: {} <=> New: {}".format(
-        orig_kmeans_accuracy, new_kmeans_accuracy))
-    delta_hier = new_hier_accuracy - orig_hier_accuracy
-    delta_kmeans = new_kmeans_accuracy - orig_kmeans_accuracy
+    delta_hier = {}
+    delta_kmeans = {}
+
+    for accuracy_metric in hier_accuracies:
+        delta_hier[accuracy_metric] = new_hier_accuracies[accuracy_metric] - \
+            orig_hier_accuracies[accuracy_metric]
+        delta_kmeans[accuracy_metric] = new_kmeans_accuracies[accuracy_metric] - \
+            orig_kmeans_accuracies[accuracy_metric]        
+
     return delta_hier, delta_kmeans
 
 def _plot_trial_results(params, hier_deltas, kmeans_deltas, trial_type):
     params = np.array(params)
-    for acc_type, deltas in zip(["hierarchical","kmeans"],[hier_deltas,kmeans_deltas]):   
-        plt.title("Param vs. Drop in {} Accuracy".format(acc_type))
-        
-        m, b = np.polyfit(params, deltas, 1)
-        plt.scatter(params, deltas)
-        plt.plot(params, m * params + b, '-')
+    for acc_type, deltas in zip(["hierarchical","kmeans"],[hier_deltas,kmeans_deltas]):
+        for accuracy_metric in deltas:
+            plt.title("Param vs. Drop in {} {}".format(acc_type, accuracy_metric))
+            
+            m, b = np.polyfit(params, deltas[accuracy_metric], 1)
+            plt.scatter(params, deltas[accuracy_metric])
+            plt.plot(params, m * params + b, '-')
 
-        plt.savefig("output/sparsify/{}_{}.png".format(acc_type,trial_type))
-        plt.close()
+            plt.savefig("output/sparsify/{}_{}.png".format(acc_type,trial_type))
+            plt.close()
 
 def spectral_trial(params):
     epsilons = np.arange(0.25,5.0,.125)
@@ -129,7 +140,6 @@ def main():
     }
     
     spectral_trial(params)
-    sample_trial(params)
-
+    
 if __name__ == "__main__":
     main()
