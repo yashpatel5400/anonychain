@@ -32,7 +32,7 @@ def get_algorithms(num_clusters):
         }),
         
         "DBSCAN": (sklearn.cluster.DBSCAN, (), {
-            'eps' : .5,
+            'eps' : 10.0,
             'n_jobs' : -1
         })
     }
