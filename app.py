@@ -42,6 +42,7 @@ def _cmd_graph(argv):
         "pca"             : False,
         "guess_clusters"  : False,
         "run_metis"       : True,
+        "run_spectral"    : True,
         "num_clusters"    : 2,
         "run_test"        : True,
         "weighted"        : False,
@@ -64,6 +65,7 @@ def _cmd_graph(argv):
             -p <p_value>         [(0,1) float for in-cluster probability]
             -q <q_value>         [(0,1) float for non-cluster probability] 
             -r <run_test_bool>   [(y/n) for whether to create SBM to run test or run on actual data]
+            -s <run_spectral>    [(y/n) to enable spectral clustering]
             -w <weighted_graph>  [(y/n) for whether to have weights on edges (randomized)]
             
             --cs <cluster_sizes> [(int list) size of each cluster (comma delimited)]
@@ -71,7 +73,7 @@ def _cmd_graph(argv):
             --lib                [('matplotlib','plotly') for plotting library]
             --mr                 [(int) indicates how many trials to be run in testing]"""
 
-    opts, args = getopt.getopt(argv,"hr:b:d:w:c:n:g:p:q:m:",['lib=','cs=','gc=','mr='])
+    opts, args = getopt.getopt(argv,"hb:c:d:g:m:n:p:q:r:s:w:",['lib=','cs=','gc=','mr='])
     for opt, arg in opts:
         if opt in ('-h'):
             print(USAGE_STRING)
@@ -84,6 +86,7 @@ def _cmd_graph(argv):
         elif opt in ("-m"): params["run_metis"]      = (arg == "y")
         elif opt in ("-n"): params["num_clusters"]   = int(arg)
         elif opt in ("-r"): params["run_test"]       = (arg == "y")
+        elif opt in ("-s"): params["run_spectral"]   = (arg == "y")
         elif opt in ("-w"): params["weighted"]       = (arg == "y")
         
         elif opt in ("-p"): params["p"] = float(arg)
@@ -127,8 +130,8 @@ def main(argv):
     produce_figures = True
 
     # algorithms to be used in the clustering runs (BOTH in testing and full analysis)
-    to_run = set(["KMeans","MiniBatchKMeans","SpectralClustering"])
-    
+    to_run = set(["DBSCAN"])
+
     if params["run_test"]:
         clusters = params["clusters"]
     else:
@@ -142,7 +145,7 @@ def main(argv):
         nmi               = defaultdict(lambda: 0.0)
         rand_ind          = defaultdict(lambda: 0.0)
         weighted_rand_ind = defaultdict(lambda: 0.0)
-        accuracy_measures = [("purity",purity), ("nmi",nmi), 
+        accuracy_measures = [# ("purity",purity), ("nmi",nmi), 
             ("rand_ind",rand_ind), ("weighted_ri",weighted_rand_ind)]
         timeElapsed       = defaultdict(lambda: 0.0)
 
@@ -151,63 +154,67 @@ def main(argv):
             if params["pca"]:
                 plot_pca(G, clusters, plot_2d=True, plot_3d=True, plot_lib=params["lib"])
 
+            spring_pos  = nx.spring_layout(G)
             n = sum([len(cluster) for cluster in clusters])
+            num_clusters = len(clusters)
             weigh_edges = False
+
             if params["graph_coarsen"] is not None:
                 params_fn = "p-{}_q-{}_gc-{}_n-{}".format(params["p"], 
                     params["q"], params["graph_coarsen"], n)
-                num_clusters = len(clusters)
-
-                # contracted_G, identified_nodes = contract_edges(G, num_edges=to_contract)
-                contracted_G, identified_nodes = contract_edges_matching(G, 
-                    num_iters=params["graph_coarsen"])
-                print("Edges removed: {}".format(len(G.edges) - len(contracted_G.edges)))
-                
-                start = time.time()
-                hier_cont_partitions = spectral_analysis(G, k=num_clusters)
-                hier_partitions = reconstruct_contracted(identified_nodes, hier_cont_partitions)
-                timeElapsed["ManualHierarchical"] += time.time() - start
-
-                start = time.time()
-                kmeans_cont_partitions = kmeans_analysis(G, k=num_clusters)
-                kmeans_partitions = reconstruct_contracted(identified_nodes, kmeans_cont_partitions)
-                timeElapsed["ManualKmeans"] += time.time() - start
-
-                if produce_figures:
-                    contracted_spring_pos = nx.spring_layout(contracted_G)
-                    draw_results(contracted_G, contracted_spring_pos, hier_cont_partitions, 
-                        "ManualHierarchical_cont_{}.png".format(params_fn), weigh_edges=weigh_edges)
-                    draw_results(contracted_G, contracted_spring_pos, kmeans_cont_partitions, 
-                        "ManualKmeans_cont_{}.png".format(params_fn), weigh_edges=weigh_edges)
-                
             else:
                 params_fn = "p-{}_q-{}_n-{}".format(params["p"], params["q"], n)
-                if params["guess_clusters"]:
-                    num_clusters = None
+
+            if params["run_spectral"]:
+                if params["graph_coarsen"] is not None:
+                    # contracted_G, identified_nodes = contract_edges(G, num_edges=to_contract)
+                    contracted_G, identified_nodes = contract_edges_matching(G, 
+                        num_iters=params["graph_coarsen"])
+                    print("Edges removed: {}".format(len(G.edges) - len(contracted_G.edges)))
+                    
+                    start = time.time()
+                    hier_cont_partitions = spectral_analysis(G, k=num_clusters)
+                    hier_partitions = reconstruct_contracted(identified_nodes, hier_cont_partitions)
+                    timeElapsed["ManualHierarchical"] += time.time() - start
+
+                    start = time.time()
+                    kmeans_cont_partitions = kmeans_analysis(G, k=num_clusters)
+                    kmeans_partitions = reconstruct_contracted(identified_nodes, kmeans_cont_partitions)
+                    timeElapsed["ManualKmeans"] += time.time() - start
+
+                    if produce_figures:
+                        contracted_spring_pos = nx.spring_layout(contracted_G)
+                        draw_results(contracted_G, contracted_spring_pos, hier_cont_partitions, 
+                            "ManualHierarchical_cont_{}.png".format(params_fn), weigh_edges=weigh_edges)
+                        draw_results(contracted_G, contracted_spring_pos, kmeans_cont_partitions, 
+                            "ManualKmeans_cont_{}.png".format(params_fn), weigh_edges=weigh_edges)
+                    
                 else:
-                    num_clusters = len(clusters)
+                    # if params["guess_clusters"]:
+                    #     num_clusters = None
+                    # else:
+                    #     num_clusters = len(clusters)
 
-                start = time.time()
-                hier_partitions = spectral_analysis(G, k=num_clusters)
-                timeElapsed["ManualHierarchical"] += time.time() - start
+                    start = time.time()
+                    hier_partitions = spectral_analysis(G, k=num_clusters)
+                    timeElapsed["ManualHierarchical"] += time.time() - start
 
-                start = time.time()
-                kmeans_partitions = kmeans_analysis(G, k=num_clusters)
-                timeElapsed["ManualKmeans"] += time.time() - start
+                    start = time.time()
+                    kmeans_partitions = kmeans_analysis(G, k=num_clusters)
+                    timeElapsed["ManualKmeans"] += time.time() - start
 
-            _update_accuracies(calc_accuracies(clusters, hier_partitions), 
-                purity, nmi, rand_ind, weighted_rand_ind, "ManualHierarchical")
-            _update_accuracies(calc_accuracies(clusters, kmeans_partitions), 
-                purity, nmi, rand_ind, weighted_rand_ind, "ManualKmeans")
-            
-            if produce_figures:
-                spring_pos  = nx.spring_layout(G)
-                draw_results(G, spring_pos, clusters, 
-                    "truth_{}.png".format(params_fn), weigh_edges=weigh_edges)
-                draw_results(G, spring_pos, hier_partitions, 
-                    "ManualHierarchical_{}.png".format(params_fn), weigh_edges=weigh_edges)
-                draw_results(G, spring_pos, kmeans_partitions, 
-                    "ManualKmeans_{}.png".format(params_fn), weigh_edges=weigh_edges)
+                _update_accuracies(calc_accuracies(clusters, hier_partitions, n), 
+                    purity, nmi, rand_ind, weighted_rand_ind, "ManualHierarchical")
+                _update_accuracies(calc_accuracies(clusters, kmeans_partitions, n), 
+                    purity, nmi, rand_ind, weighted_rand_ind, "ManualKmeans")
+                
+                if produce_figures:
+                    draw_results(G, spring_pos, clusters, 
+                        "truth_{}.png".format(params_fn), weigh_edges=weigh_edges)
+                    draw_results(G, spring_pos, hier_partitions, 
+                        "ManualHierarchical_{}.png".format(params_fn), weigh_edges=weigh_edges)
+                    draw_results(G, spring_pos, kmeans_partitions, 
+                        "ManualKmeans_{}.png".format(params_fn), weigh_edges=weigh_edges)
 
             algorithms = get_algorithms(num_clusters)
             if params["graph_coarsen"] is not None:
@@ -220,7 +227,7 @@ def main(argv):
                 format_metis(nx.adjacency_matrix(G), metis_fn)
                 metis_partitions, time_elapsed = run_metis(metis_fn, num_clusters)
 
-                _update_accuracies(calc_accuracies(clusters, metis_partitions), 
+                _update_accuracies(calc_accuracies(clusters, metis_partitions, n), 
                     purity, nmi, rand_ind, weighted_rand_ind, "Metis")
 
                 timeElapsed["Metis"] += time_elapsed
@@ -237,26 +244,29 @@ def main(argv):
 
                     start = time.time()
                     if params["graph_coarsen"] is not None:
-                        cont_partitions = cluster_analysis(S, algorithm, args, kwds)
+                        cont_partitions, _ = cluster_analysis(S, algorithm, args, kwds)
                         partitions = reconstruct_contracted(identified_nodes, cont_partitions)
+                        outliers   = None # TODO : handles outliers for contracted graphs
                     else:
-                        partitions = cluster_analysis(S, algorithm, args, kwds)
+                        partitions, outliers = cluster_analysis(S, algorithm, args, kwds)
                     end = time.time()
 
                     if params["graph_coarsen"] is not None:
                         if produce_figures:
                             draw_results(contracted_G, contracted_spring_pos, cont_partitions, 
                                 "{}_contracted_{}.png".format(alg_name, params_fn), 
-                                weigh_edges=weigh_edges)
+                                weigh_edges=weigh_edges, outliers=outliers)
 
-                    _update_accuracies(calc_accuracies(clusters, partitions), 
+                    _update_accuracies(calc_accuracies(clusters, partitions, n), 
                         purity, nmi, rand_ind, weighted_rand_ind, alg_name)
                     timeElapsed[alg_name] += end - start
                     if produce_figures:
                         draw_results(G, spring_pos, partitions, 
-                            "{}_{}.png".format(alg_name, params_fn), weigh_edges=weigh_edges)
+                            "{}_{}.png".format(alg_name, params_fn), 
+                            weigh_edges=weigh_edges, outliers=outliers)
                     print(DELINEATION)
         
+        print(timeElapsed)
         for accuracy_name, accuracies in accuracy_measures:
             for alg_name in accuracies.keys():
                 accuracies[alg_name]  /= params["multi_run"]

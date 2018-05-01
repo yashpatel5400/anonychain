@@ -45,7 +45,7 @@ def write_results(partitions, index_to_id, fn):
             partition_to_nodes[partition_id] = node_addresses
     pickle.dump(partition_to_nodes, open("output/{}.pickle".format(fn),"wb"))
 
-def draw_results(G, pos, partitions, fn, weigh_edges=False):
+def draw_results(G, pos, partitions, fn, weigh_edges=False, outliers=None):
     """Given a graph (G), the node positions (pos), the partitions on the nodes, the destination
     filename, and whether or not the edges are weighted, plots a figure and saves it
     to the destination location (in the output/ folder)
@@ -61,8 +61,13 @@ def draw_results(G, pos, partitions, fn, weigh_edges=False):
     if partitions is None:
         guessed_colors = ["r"] * len(nodes)
     else:
-        guessed_colors = [colors[j] for i in range(len(nodes))
-            for j, partition in enumerate(partitions) if nodes[i] in partition]
+        guessed_colors = []
+        for i in range(len(nodes)):
+            if outliers is not None and nodes[i] in outliers:
+                guessed_colors.append("k")
+            for j, partition in enumerate(partitions):
+                if nodes[i] in partition:
+                    guessed_colors.append(colors[j])
     
     if weigh_edges:
         edgewidth = [d['weight'] for (u,v,d) in G.edges(data=True)]
@@ -101,7 +106,7 @@ def _reorder_clusters(clusters, partitions, intersect_allowed=True):
         reordered_partitions[i] = partitions[most_similar]
     return reordered_partitions
 
-def calc_accuracy(truth, guess):
+def calc_accuracy(truth, guess, n):
     """Given the ground truth and guessed partitions (both list of sets of ints), finds
     the accuracy of the clustering algorithm. Returns as a percent, i.e. between 0 and 100
 
@@ -111,38 +116,33 @@ def calc_accuracy(truth, guess):
         guess = _reorder_clusters(truth, guess, intersect_allowed=False)
 
         num_correct = 0
-        total_nodes = 0
         for i in range(len(truth)):
             num_correct += len(truth[i].intersection(guess[i]))
-            total_nodes += len(truth[i])
-        return 100.0 * (num_correct/total_nodes)
+        return 100.0 * (num_correct/n)
     return 0.0
 
 # accuracy measures below according to: 
 # https://nlp.stanford.edu/IR-book/html/htmledition/evaluation-of-clustering-1.html
 
-def calc_accuracies(truth, guess):
+def calc_accuracies(truth, guess, n):
     return {
-        "purity"            : calc_purity(truth, guess),
-        "nmi"               : calc_nmi(truth, guess),
-        "rand_ind"          : calc_rand_ind(truth, guess),
-        "weighted_ri" : calc_rand_ind(truth, guess, beta=0.5),   
+        "purity"            : calc_purity  (truth, guess, n),
+        "nmi"               : calc_nmi     (truth, guess, n),
+        "rand_ind"          : calc_rand_ind(truth, guess, n),
+        "weighted_ri"       : calc_rand_ind(truth, guess, n, beta=0.5),   
     }
 
-def calc_purity(truth, guess):
+def calc_purity(truth, guess, n):
     if len(truth) == len(guess):
         guess = _reorder_clusters(truth, guess, intersect_allowed=True)
 
         num_correct = 0
-        total_nodes = 0
         for i in range(len(truth)):
             num_correct += len(truth[i].intersection(guess[i]))
-            total_nodes += len(truth[i])
-        return num_correct/total_nodes
+        return num_correct/n
     return 0.0
 
-def calc_nmi(truth, guess):
-    total_nodes = sum([len(true_cluster) for true_cluster in truth])
+def calc_nmi(truth, guess, n):
     if len(truth) == len(guess):
         I = 0.0
         for true_cluster in truth:
@@ -151,27 +151,26 @@ def calc_nmi(truth, guess):
                 if intersect_size == 0 or len(guess_cluster) == 0:
                     cur_I = 0.0
                 else:
-                    cur_I = (intersect_size / total_nodes) * \
-                        np.log(total_nodes * intersect_size / (len(true_cluster) * len(guess_cluster)))
+                    cur_I = (intersect_size / n) * \
+                        np.log(n * intersect_size / (len(true_cluster) * len(guess_cluster)))
                 I += cur_I
 
         H_truth = 0.0
         H_guess = 0.0
         for true_cluster in truth:
-            H_truth -= (len(true_cluster) / total_nodes) * np.log(len(true_cluster) / total_nodes)
+            H_truth -= (len(true_cluster) / n) * np.log(len(true_cluster) / n)
         for guess_cluster in guess:
             if len(guess_cluster) != 0:
-                H_guess -= (len(guess_cluster) / total_nodes) * np.log(len(guess_cluster) / total_nodes)
+                H_guess -= (len(guess_cluster) / n) * np.log(len(guess_cluster) / n)
 
         return (I / ((H_truth + H_guess) / 2))
     return 0.0
 
-def _separate_pairs(clusters):
-    total_nodes = sum([len(cluster) for cluster in clusters])
+def _separate_pairs(clusters, n):
     positives, negatives = set(), set()
     for cluster in clusters:
         for node_A in cluster:
-            for node_B in range(total_nodes):
+            for node_B in range(n):
                 pair = (node_A, node_B)
                 if node_B in cluster:
                     positives.add(pair)
@@ -179,9 +178,9 @@ def _separate_pairs(clusters):
                     negatives.add(pair)
     return positives, negatives
 
-def calc_rand_ind(truth, guess, beta=None):
-    truth_pos, truth_neg = _separate_pairs(truth)
-    guess_pos, guess_neg = _separate_pairs(guess)
+def calc_rand_ind(truth, guess, n, beta=None):
+    truth_pos, truth_neg = _separate_pairs(truth, n)
+    guess_pos, guess_neg = _separate_pairs(guess, n)
 
     tp = len(guess_pos.intersection(truth_pos))
     tn = len(guess_neg.intersection(truth_neg))
@@ -190,8 +189,14 @@ def calc_rand_ind(truth, guess, beta=None):
     fn = len(guess_neg.intersection(truth_pos))
 
     if beta is None:
-        return (tp + tn) / (tp + tn + fp + fn)
+        return (tp + tn) / pairwise_guesses
 
-    P = tp / (tp + fp)
-    R = tp / (tp + fn)
+    true_pos  = tp + fp
+    guess_neg = tp + fn
+
+    if true_pos == 0 and guess_neg == 0:
+        return 0.0
+
+    P = tp / true_pos
+    R = tp / guess_neg
     return ((beta ** 2 + 1) * P * R) / (beta ** 2 * P + R)

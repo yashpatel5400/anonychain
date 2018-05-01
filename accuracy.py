@@ -67,11 +67,18 @@ def conduct_tests(ps, qs, css):
 
 def extract_results(accuracy_metric, p, params):
     alg_accuracies, alg_times = {}, {} 
-    for (q,gc,n) in params:
-        fn = "output/{}_p-{}_q-{}_gc-{}_n-{}.txt".format(accuracy_metric, p, q, gc, n)
+    for param in params:
+        if len(param) == 3:
+            q, gc, n = param
+            fn = "output/{}_p-{}_q-{}_gc-{}_n-{}.txt".format(accuracy_metric, p, q, gc, n)
+        
+        else:
+            q, n = param
+            fn = "output/{}_p-{}_q-{}_n-{}.txt".format(accuracy_metric, p, q, n)
+        
         print(fn)
         lines = open(fn, "r").readlines()
-        accuracies, times = lines[3:9], lines[13:19]
+        accuracies, times = lines[3:10], lines[14:20]
         for accuracy in accuracies:
             values = accuracy.split("|")
             alg_name, alg_accuracy = values[1].strip(), float(values[2].strip())
@@ -144,8 +151,8 @@ def graph_results(fn, d, p, qs, n, gc=None, save_static=True):
     return out_fn
 
 def create_collage(width, height, listofimages, output_fn):
-    cols = 2
-    rows = 5
+    cols = 1
+    rows = 2
     thumbnail_width = width//cols
     thumbnail_height = height//rows
     size = thumbnail_width, thumbnail_height
@@ -176,7 +183,7 @@ def create_collage(width, height, listofimages, output_fn):
 
     new_im.save("output/results_{}.png".format(output_fn))
 
-def main(opt_params):
+def main(opt_params, opt_ignore):
     files = os.listdir("output")
     accuracy_metrics = ["purity", "nmi", "weighted_ri"]
 
@@ -187,7 +194,10 @@ def main(opt_params):
 
     for i, accuracy_metric in enumerate(accuracy_metrics):
         results = [file for file in files if len(file.split(accuracy_metric)) > 1
-            and file.split(".")[-1] == "txt" and opt_params in file]
+            and file.split(".")[-1] == "txt" 
+            and opt_params in file
+            and opt_ignore not in file]
+
         p_to_params = {}
         for result in results:
             params_txt = result.split(accuracy_metric)[1]
@@ -202,7 +212,11 @@ def main(opt_params):
 
             if p not in p_to_params:
                 p_to_params[p] = []
-            p_to_params[p].append((q, gc, n))
+
+            if gc is not None:
+                p_to_params[p].append((q, gc, n))
+            else:
+                p_to_params[p].append((q, n))
 
         result_files = []
         for p in p_to_params:
@@ -210,6 +224,7 @@ def main(opt_params):
             sorted_qs = [param[0] for param in p_to_params[p]]
 
             accuracies, times = extract_results(accuracy_metric, p, p_to_params[p])
+            # graph_results("time", times, p, [(i+1)*100 for i in range(10)], n, None)
             for alg in accuracies:
                 if p not in alg_scores:
                     alg_scores[p] = {}
@@ -238,29 +253,10 @@ def main(opt_params):
     # create_collage(1200 * 2,800 * 3,result_files, "overall")
 
 if __name__ == "__main__":
-    # main(opt_params="gc-2_n-276")
-    files = [
-        "output/sparsify/spectral_0.5_original.png",
-        "output/sparsify/spectral_1.5_original.png",
-        "output/sparsify/spectral_2.5_original.png",
-        "output/sparsify/spectral_3.5_original.png",
-        "output/sparsify/spectral_4.5_original.png",
-
-        "output/sparsify/spectral_0.5_sparse.png",
-        "output/sparsify/spectral_1.5_sparse.png",
-        "output/sparsify/spectral_2.5_sparse.png",
-        "output/sparsify/spectral_3.5_sparse.png",
-        "output/sparsify/spectral_4.5_sparse.png",
-    ]
-    # files = os.listdir("output/contracted2")
-    # files = sorted(["output/{}".format(file) for file in files])
+    main(opt_params="n-276", opt_ignore="gc")
+    # files = [
+    #     "output/sparsify/time_hierarchical_spectral.png",
+    #     "output/sparsify/time_kmeans_spectral.png"
+    # ]
     # 
-    # uncontracted = []
-    # contracted = []
-    # for i, file in enumerate(files):
-    #     if i % 2 == 0:
-    #         contracted.append(file)
-    #     else:
-    #         uncontracted.append(file)
-    # files = contracted + uncontracted
-    create_collage(640 * 2,480 * 5,files, "original_vs_sparse")
+    # create_collage(640 * 1,480 * 2,files, "time_sparse")

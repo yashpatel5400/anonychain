@@ -10,23 +10,22 @@ def generate(in_fn="tests.txt",out_fn="tests.sh"):
     if not os.path.isfile(in_fn):
         print("No test file found! Exiting now...")
 
-    template = "python3 app.py -r y -p {} -q {} --mr {} --gc {} --cs {}\n"
+    template = "python3 app.py -r y -p {} -q {} --mr {} --cs {}\n"
     output_lines = []
     with open(in_fn, "r") as f:
         for line in f:
             params = line.split(";")
-            if len(params) != 5:
+            if len(params) != 4:
                 continue
 
-            p, qs, mr, gc, cs = params
+            p, qs, mr, cs = params
             p  = float(p.strip())
             qs = [float(q.strip()) for q in qs.split(",")]
             mr = int(mr.strip())
-            gc = int(gc.strip())
             cs = cs.replace(" ", "")
 
             for q in qs:
-                output_lines.append(template.format(p,q,mr,gc,cs))
+                output_lines.append(template.format(p,q,mr,cs))
     
     with open(out_fn, "w") as f:
         f.writelines(output_lines)

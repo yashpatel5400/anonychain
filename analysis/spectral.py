@@ -191,6 +191,11 @@ def cluster_analysis(L, cluster_alg, args, kwds):
     labels = cluster_alg(*args, **kwds).fit_predict(L)
     num_clusters = np.max(labels) + 1
     partitions = [set() for _ in range(num_clusters)]
+    outliers   = set() # mechanisms only used in DBSCAN (i.e. where vertex gets no label)
+
     for i, guess in enumerate(labels):
-        partitions[guess].add(i)
-    return partitions
+        if guess == -1:
+            outliers.add(i)
+        else:
+            partitions[guess].add(i)
+    return partitions, outliers

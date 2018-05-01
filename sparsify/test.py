@@ -32,7 +32,9 @@ def _partition_graph(G, clusters):
     start = time.time()
     hier_partitions = spectral_analysis(G, k=len(clusters))
     hier_accuracies = calc_accuracies(clusters, hier_partitions)
-    hier_accuracies["time"] = time.time() - start
+    end = time.time()
+    print(end-start)
+    hier_accuracies["time"] = end - start
 
     start = time.time()
     kmeans_partitions = kmeans_analysis(G, k=len(clusters))
@@ -57,10 +59,14 @@ def _run_test(G, clusters, sparsifier, param, sname):
     delta_kmeans = {}
 
     for accuracy_metric in orig_hier_accuracies:
-        delta_hier[accuracy_metric] = new_hier_accuracies[accuracy_metric] - \
-            orig_hier_accuracies[accuracy_metric]
-        delta_kmeans[accuracy_metric] = new_kmeans_accuracies[accuracy_metric] - \
-            orig_kmeans_accuracies[accuracy_metric]        
+        if accuracy_metric != "time":
+            delta_hier[accuracy_metric] = new_hier_accuracies[accuracy_metric] - \
+                orig_hier_accuracies[accuracy_metric]
+            delta_kmeans[accuracy_metric] = new_kmeans_accuracies[accuracy_metric] - \
+                orig_kmeans_accuracies[accuracy_metric]
+        else:
+            delta_hier[accuracy_metric] = new_hier_accuracies[accuracy_metric]
+            delta_kmeans[accuracy_metric] = new_kmeans_accuracies[accuracy_metric]
 
     return delta_hier, delta_kmeans
 
@@ -74,6 +80,7 @@ def _plot_trial_results(params, hier_deltas, kmeans_deltas, trial_type):
                     metrics[accuracy_metric] = []
                 metrics[accuracy_metric].append(trial[accuracy_metric])
 
+        print(metrics)
         for accuracy_metric in metrics:
             plt.title("Param vs. Drop in {} {}".format(acc_type, accuracy_metric))
             
